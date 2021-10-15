@@ -249,7 +249,9 @@ enum IIT_Info {
   IIT_BF16 = 48,
   IIT_STRUCT9 = 49,
   IIT_V256 = 50,
-  IIT_AMX  = 51
+  IIT_AMX  = 51,
+  IIT_EXTERNREF = 52,
+  IIT_FUNCREF = 53
 };
 
 static void EncodeFixedValueType(MVT::SimpleValueType VT,
@@ -282,6 +284,8 @@ static void EncodeFixedValueType(MVT::SimpleValueType VT,
   case MVT::Other: return Sig.push_back(IIT_EMPTYSTRUCT);
   // MVT::isVoid is used to represent varargs here.
   case MVT::isVoid: return Sig.push_back(IIT_VARARG);
+  case MVT::externref: return Sig.push_back(IIT_EXTERNREF);
+  case MVT::funcref: return Sig.push_back(IIT_FUNCREF);
   }
 }
 

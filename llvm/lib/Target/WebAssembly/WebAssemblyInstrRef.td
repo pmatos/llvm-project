@@ -11,12 +11,13 @@
 ///
 //===----------------------------------------------------------------------===//
 
-multiclass REF_I<WebAssemblyRegClass rc, ValueType vt> {
-  defm REF_NULL_#rc : I<(outs rc:$res), (ins HeapType:$heaptype),
-                        (outs), (ins HeapType:$heaptype),
-                        [],
-                        "ref.null\t$res, $heaptype",
-                        "ref.null\t$heaptype",
+multiclass REF_I<WebAssemblyRegClass rc, ValueType vt, string ht> {
+  defm REF_NULL_#rc : I<(outs rc:$dst), (ins),
+                        (outs), (ins),
+                        [(set rc:$dst,
+                           (!cast<SDPatternOperator>("int_wasm_ref_null_" # ht)))],
+                        "ref.null\t$dst, " # ht,
+                        "ref.null\t" # ht,
                         0xd0>,
                       Requires<[HasReferenceTypes]>;
   defm SELECT_#rc: I<(outs rc:$dst), (ins rc:$lhs, rc:$rhs, I32:$cond),
@@ -28,8 +29,8 @@ multiclass REF_I<WebAssemblyRegClass rc, ValueType vt> {
                    Requires<[HasReferenceTypes]>;
 }
 
-defm "" : REF_I<FUNCREF, funcref>;
-defm "" : REF_I<EXTERNREF, externref>;
+defm "" : REF_I<FUNCREF, funcref, "func">;
+defm "" : REF_I<EXTERNREF, externref, "extern">;
 
 foreach rc = [FUNCREF, EXTERNREF] in {
 def : Pat<(select (i32 (setne I32:$cond, 0)), rc:$lhs, rc:$rhs),

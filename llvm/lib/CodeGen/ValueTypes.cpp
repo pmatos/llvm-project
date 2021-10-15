@@ -203,7 +203,8 @@ Type *EVT::getTypeForEVT(LLVMContext &Context) const {
   case MVT::externref:
     return PointerType::get(StructType::create(Context), 10);
   case MVT::funcref:
-    return PointerType::get(StructType::create(Context), 20);
+    // FIXME: unsure this correct but before it was definitely NOT!
+    return PointerType::get(0, 20); // opaque pointer to addrspace(20)
   case MVT::v1i1:
     return FixedVectorType::get(Type::getInt1Ty(Context), 1);
   case MVT::v2i1:

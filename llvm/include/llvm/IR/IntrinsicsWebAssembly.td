@@ -24,6 +24,28 @@ def int_wasm_memory_grow : Intrinsic<[llvm_anyint_ty],
                                      []>;
 
 //===----------------------------------------------------------------------===//
+// Table intrinsics
+//===----------------------------------------------------------------------===//
+def int_wasm_ref_null_extern : Intrinsic<[llvm_externref_ty], [], [IntrNoMem]>;
+def int_wasm_ref_null_func : Intrinsic<[llvm_funcref_ty], [], [IntrNoMem]>;
+
+//===----------------------------------------------------------------------===//
+// Table intrinsics
+//===----------------------------------------------------------------------===//
+// Query the current table size, and increase the current table size.
+// Note that memory.size is not IntrNoMem because it must be sequenced with
+// respect to memory.grow calls.
+// def int_wasm_table_size : Intrinsic<[llvm_i32_ty],
+//                                     [LLVMPointerType<llvm_externref_ty>],
+//                                     [IntrReadMem]>;
+// def int_wasm_table_grow_externref : Intrinsic<[llvm_i32_ty],
+//                                               [llvm_i32_ty, llvm_i32_ty, llvm_externref_ty],
+//                                               []>;
+// def int_wasm_table_grow_funcref : Intrinsic<[llvm_i32_ty],
+//                                             [llvm_i32_ty, llvm_i32_ty, llvm_funcref_ty],
+//                                             []>;
+
+//===----------------------------------------------------------------------===//
 // Trapping float-to-int conversions
 //===----------------------------------------------------------------------===//
 

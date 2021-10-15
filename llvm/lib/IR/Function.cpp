@@ -979,7 +979,9 @@ enum IIT_Info {
   IIT_BF16 = 48,
   IIT_STRUCT9 = 49,
   IIT_V256 = 50,
-  IIT_AMX  = 51
+  IIT_AMX  = 51,
+  IIT_EXTERNREF = 52,
+  IIT_FUNCREF = 53
 };
 
 static void DecodeIITType(unsigned &NextElt, ArrayRef<unsigned char> Infos,
@@ -1087,6 +1089,14 @@ static void DecodeIITType(unsigned &NextElt, ArrayRef<unsigned char> Infos,
   case IIT_V1024:
     OutputTable.push_back(IITDescriptor::getVector(1024, IsScalableVector));
     DecodeIITType(NextElt, Infos, Info, OutputTable);
+    return;
+  case IIT_EXTERNREF:
+    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 10));
+    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Struct, 0));
+    return;
+  case IIT_FUNCREF:
+    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 20));
+    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Function, 0));
     return;
   case IIT_PTR:
     OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 0));
@@ -1250,6 +1260,8 @@ static Type *DecodeFixedType(ArrayRef<Intrinsic::IITDescriptor> &Infos,
   case IITDescriptor::Float: return Type::getFloatTy(Context);
   case IITDescriptor::Double: return Type::getDoubleTy(Context);
   case IITDescriptor::Quad: return Type::getFP128Ty(Context);
+  // FIXME: this definitely looks strange and might require a rethink of funcref representation
+  case IITDescriptor::Function: return FunctionType::get(0, false);
 
   case IITDescriptor::Integer:
     return IntegerType::get(Context, D.Integer_Width);
@@ -1453,6 +1465,13 @@ static bool matchIntrinsicType(
       return false;
     }
 
+    case IITDescriptor::Function: {
+      FunctionType *FTy = dyn_cast<FunctionType>(Ty);
+      if (!FTy)
+        return true;
+      return false;
+    }
+      
     case IITDescriptor::Struct: {
       StructType *ST = dyn_cast<StructType>(Ty);
       if (!ST || ST->getNumElements() != D.Struct_NumElements)

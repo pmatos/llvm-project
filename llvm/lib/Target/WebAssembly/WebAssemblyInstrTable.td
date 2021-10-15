@@ -20,7 +20,7 @@ def WebAssemblyTableGet : SDNode<"WebAssemblyISD::TABLE_GET", WebAssemblyTableGe
                                  [SDNPHasChain, SDNPMayLoad, SDNPMemOperand]>;
 
 
-multiclass TABLE<WebAssemblyRegClass rc> {
+multiclass TABLE<WebAssemblyRegClass rc> {//, string suffix> {
   let mayLoad = 1 in
   defm TABLE_GET_#rc : I<(outs rc:$res), (ins table32_op:$table, I32:$i),
                          (outs), (ins table32_op:$table),
@@ -40,6 +40,7 @@ multiclass TABLE<WebAssemblyRegClass rc> {
   defm TABLE_GROW_#rc : I<(outs I32:$sz), (ins table32_op:$table, rc:$val, I32:$n),
                           (outs), (ins table32_op:$table),
                           [],
+                          //[(set I32:$sz, (!cast<SDPatternOperator>("int_wasm_table_grow_" # suffix) table32_op:$table, rc:$val, I32:$n))],
                           "table.grow\t$sz, $table, $val, $n",
                           "table.grow\t$table",
                           0xfc0f>;
@@ -62,6 +63,8 @@ multiclass TABLE<WebAssemblyRegClass rc> {
   }
 }
 
+//defm "" : TABLE<FUNCREF, "funcref">, Requires<[HasReferenceTypes]>;
+//defm "" : TABLE<EXTERNREF, "externref">, Requires<[HasReferenceTypes]>;
 defm "" : TABLE<FUNCREF>, Requires<[HasReferenceTypes]>;
 defm "" : TABLE<EXTERNREF>, Requires<[HasReferenceTypes]>;
 
@@ -72,6 +75,7 @@ def : Pat<(WebAssemblyTableSet mcsym:$table, i32:$idx, funcref:$r),
 defm TABLE_SIZE : I<(outs I32:$sz), (ins table32_op:$table),
                     (outs), (ins table32_op:$table),
                     [],
+//                    [(set I32:$sz, (int_wasm_table_size table32_op:$table))],
                     "table.size\t$sz, $table",
                     "table.size\t$table",
                     0xfc10>,
