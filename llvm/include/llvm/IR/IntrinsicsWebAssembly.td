@@ -11,6 +11,9 @@
 ///
 //===----------------------------------------------------------------------===//
 
+// Type definition for a table in an intrinsic
+def llvm_table_ty : LLVMQualPointerType<llvm_i8_ty, 1>;
+
 let TargetPrefix = "wasm" in {  // All intrinsics start with "llvm.wasm.".
 
 // Query the current memory size, and increase the current memory size.
@@ -22,6 +25,25 @@ def int_wasm_memory_size : Intrinsic<[llvm_anyint_ty],
 def int_wasm_memory_grow : Intrinsic<[llvm_anyint_ty],
                                      [llvm_i32_ty, LLVMMatchType<0>],
                                      []>;
+
+//===----------------------------------------------------------------------===//
+// Table intrinsics
+//===----------------------------------------------------------------------===//
+def int_wasm_ref_null_extern : Intrinsic<[llvm_externref_ty], [], [IntrNoMem]>;
+def int_wasm_ref_null_func : Intrinsic<[llvm_funcref_ty], [], [IntrNoMem]>;
+
+//===----------------------------------------------------------------------===//
+// Table intrinsics
+//===----------------------------------------------------------------------===//
+// Query the current table size, and increase the current table size.
+// Note that memory.size is not IntrNoMem because it must be sequenced with
+// respect to memory.grow calls.
+def int_wasm_table_size : Intrinsic<[llvm_i32_ty],
+                                    [llvm_table_ty],
+                                    [IntrReadMem]>;
+def int_wasm_table_grow : Intrinsic<[llvm_i32_ty],
+                                    [llvm_table_ty, llvm_anyref_ty, llvm_i32_ty],
+                                    []>;
 
 //===----------------------------------------------------------------------===//
 // Trapping float-to-int conversions

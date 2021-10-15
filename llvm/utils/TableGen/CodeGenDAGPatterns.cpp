@@ -834,6 +834,11 @@ void TypeInfer::expandOverloads(TypeSetByHwMode::SetType &Out,
           if (Legal.count(T))
             Out.insert(T);
         return;
+    case MVT::rAny:
+        for (MVT T : MVT::ref_valuetypes())
+          if (Legal.count(T))
+            Out.insert(T);
+        return;
       case MVT::Any:
         for (MVT T : MVT::all_valuetypes())
           if (Legal.count(T))

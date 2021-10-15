@@ -980,7 +980,9 @@ enum IIT_Info {
   IIT_STRUCT9 = 49,
   IIT_V256 = 50,
   IIT_AMX  = 51,
-  IIT_PPCF128 = 52
+  IIT_PPCF128 = 52,
+  IIT_EXTERNREF = 53,
+  IIT_FUNCREF = 54
 };
 
 static void DecodeIITType(unsigned &NextElt, ArrayRef<unsigned char> Infos,
@@ -1091,6 +1093,14 @@ static void DecodeIITType(unsigned &NextElt, ArrayRef<unsigned char> Infos,
   case IIT_V1024:
     OutputTable.push_back(IITDescriptor::getVector(1024, IsScalableVector));
     DecodeIITType(NextElt, Infos, Info, OutputTable);
+    return;
+  case IIT_EXTERNREF:
+    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 10));
+    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Struct, 0));
+    return;
+  case IIT_FUNCREF:
+    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 20));
+    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Integer, 8));
     return;
   case IIT_PTR:
     OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 0));
@@ -1449,16 +1459,16 @@ static bool matchIntrinsicType(
       PointerType *PT = dyn_cast<PointerType>(Ty);
       if (!PT || PT->getAddressSpace() != D.Pointer_AddressSpace)
         return true;
-      if (!PT->isOpaque())
+      if (!PT->isOpaque()) 
         return matchIntrinsicType(PT->getElementType(), Infos, ArgTys,
-                                  DeferredChecks, IsDeferredCheck);
-      // Consume IIT descriptors relating to the pointer element type.
+                                            DeferredChecks, IsDeferredCheck);
+      // Consume IIT descriptors relating to the pointer element type
       while (Infos.front().Kind == IITDescriptor::Pointer)
         Infos = Infos.slice(1);
       Infos = Infos.slice(1);
       return false;
     }
-
+      
     case IITDescriptor::Struct: {
       StructType *ST = dyn_cast<StructType>(Ty);
       if (!ST || ST->getNumElements() != D.Struct_NumElements)
@@ -1491,6 +1501,7 @@ static bool matchIntrinsicType(
         case IITDescriptor::AK_AnyFloat:   return !Ty->isFPOrFPVectorTy();
         case IITDescriptor::AK_AnyVector:  return !isa<VectorType>(Ty);
         case IITDescriptor::AK_AnyPointer: return !isa<PointerType>(Ty);
+        case IITDescriptor::AK_AnyRef:     return !Type::IsWasmRefType(Ty);
         default:                           break;
       }
       llvm_unreachable("all argument kinds not covered");

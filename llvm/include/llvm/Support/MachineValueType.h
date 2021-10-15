@@ -269,6 +269,10 @@ namespace llvm {
 
       funcref        = 175,    // WebAssembly's funcref type
       externref      = 176,    // WebAssembly's externref type
+
+      FIRST_REFTYPE_VALUETYPE = funcref,
+      LAST_REFTYPE_VALUETYPE = externref,
+      
       x86amx         = 177,    // This is an X86 AMX value
       i64x8          = 178,    // 8 Consecutive GPRs (AArch64)
 
@@ -280,32 +284,35 @@ namespace llvm {
       // MVT::MAX_ALLOWED_VALUETYPE is used for asserts and to size bit vectors
       // This value must be a multiple of 32.
       MAX_ALLOWED_VALUETYPE = 192,
-
+      
       // A value of type llvm::TokenTy
-      token          = 248,
+      token          = 247,
 
       // This is MDNode or MDString.
-      Metadata       = 249,
+      Metadata       = 248,
 
       // An int value the size of the pointer of the current
       // target to any address space. This must only be used internal to
       // tblgen. Other than for overloading, we treat iPTRAny the same as iPTR.
-      iPTRAny        = 250,
+      iPTRAny        = 249,
 
       // A vector with any length and element size. This is used
       // for intrinsics that have overloadings based on vector types.
       // This is only for tblgen's consumption!
-      vAny           = 251,
+      vAny           = 250,
 
       // Any floating-point or vector floating-point value. This is used
       // for intrinsics that have overloadings based on floating-point types.
       // This is only for tblgen's consumption!
-      fAny           = 252,
+      fAny           = 251,
 
       // An integer or vector integer value of any bit width. This is
       // used for intrinsics that have overloadings based on integer bit widths.
       // This is only for tblgen's consumption!
-      iAny           = 253,
+      iAny           = 252,
+
+      // Any Wasm reference type
+      rAny           = 253,
 
       // An int value the size of the pointer of the current
       // target.  This should only be used internal to tblgen!
@@ -451,7 +458,7 @@ namespace llvm {
     bool isOverloaded() const {
       return (SimpleTy == MVT::Any || SimpleTy == MVT::iAny ||
               SimpleTy == MVT::fAny || SimpleTy == MVT::vAny ||
-              SimpleTy == MVT::iPTRAny);
+              SimpleTy == MVT::iPTRAny || SimpleTy == MVT::rAny);
     }
 
     /// Return a vector with the same number of elements as this vector, but
@@ -870,6 +877,7 @@ namespace llvm {
       case fAny:
       case vAny:
       case Any:
+      case rAny:
         llvm_unreachable("Value type is overloaded.");
       case token:
         llvm_unreachable("Token type is a sentinel that cannot be used "
@@ -1408,7 +1416,13 @@ namespace llvm {
       return enum_seq_inclusive(MVT::FIRST_VALUETYPE, MVT::LAST_VALUETYPE,
                                 force_iteration_on_noniterable_enum);
     }
-
+    
+    static auto ref_valuetypes() {
+      return enum_seq_inclusive(MVT::FIRST_REFTYPE_VALUETYPE,
+                                MVT::LAST_REFTYPE_VALUETYPE,
+                                force_iteration_on_noniterable_enum);
+    }
+    
     static auto integer_valuetypes() {
       return enum_seq_inclusive(MVT::FIRST_INTEGER_VALUETYPE,
                                 MVT::LAST_INTEGER_VALUETYPE,

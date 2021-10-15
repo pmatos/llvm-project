@@ -218,22 +218,24 @@ def externref : ValueType<0,    176>;  // WebAssembly's externref type
 def x86amx    : ValueType<8192, 177>;  // X86 AMX value
 def i64x8     : ValueType<512,  178>;  // 8 Consecutive GPRs (AArch64)
 
-
-def token      : ValueType<0, 248>;  // TokenTy
-def MetadataVT : ValueType<0, 249>;  // Metadata
+def token      : ValueType<0, 247>;  // TokenTy
+def MetadataVT : ValueType<0, 248>;  // Metadata
 
 // Pseudo valuetype mapped to the current pointer size to any address space.
 // Should only be used in TableGen.
-def iPTRAny    : ValueType<0, 250>;
+def iPTRAny    : ValueType<0, 249>;
 
 // Pseudo valuetype to represent "vector of any size"
-def vAny       : ValueType<0, 251>;
+def vAny       : ValueType<0, 250>;
 
 // Pseudo valuetype to represent "float of any format"
-def fAny       : ValueType<0, 252>;
+def fAny       : ValueType<0, 251>;
 
 // Pseudo valuetype to represent "integer of any bit width"
-def iAny       : ValueType<0, 253>;
+def iAny       : ValueType<0, 252>;
+
+// Pseudo valuetype to represent "any reference type"
+def rAny       : ValueType<0, 253>;
 
 // Pseudo valuetype mapped to the current pointer size.
 def iPTR       : ValueType<0, 254>;

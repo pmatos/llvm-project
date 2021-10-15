@@ -77,6 +77,38 @@ public:
     ScalableVectorTyID ///< Scalable SIMD vector type
   };
 
+  ////////// FIXME: WASM EXPERIMENTAL 
+  enum WasmAddressSpace : unsigned {
+    // Default address space, for pointers to linear memory (stack, heap, data).
+    WASM_ADDRESS_SPACE_DEFAULT = 0,
+    // A non-integral address space for pointers to named objects outside of
+    // linear memory: WebAssembly globals or WebAssembly locals.  Loads and
+    // stores
+    // to these pointers are lowered to global.get / global.set or local.get /
+    // local.set, as appropriate.
+    WASM_ADDRESS_SPACE_VAR = 1,
+    // A non-integral address space for externref values
+    WASM_ADDRESS_SPACE_EXTERNREF = 10,
+    // A non-integral address space for funcref values
+    WASM_ADDRESS_SPACE_FUNCREF = 20,
+  };
+
+public:
+  static bool IsWasmFuncrefType(const Type *Ty) {
+    return isa<PointerType>(Ty) &&
+           Ty->getPointerAddressSpace() ==
+               WasmAddressSpace::WASM_ADDRESS_SPACE_FUNCREF;
+  }
+  static bool IsWasmExternrefType(const Type *Ty) {
+    return isa<PointerType>(Ty) &&
+           Ty->getPointerAddressSpace() ==
+               WasmAddressSpace::WASM_ADDRESS_SPACE_EXTERNREF;
+  }
+  static bool IsWasmRefType(const Type *Ty) {
+    return IsWasmFuncrefType(Ty) || IsWasmExternrefType(Ty);
+  }
+  ////////// WASM EXPERIMENTAL
+  
 private:
   /// This refers to the LLVMContext in which this type was uniqued.
   LLVMContext &Context;

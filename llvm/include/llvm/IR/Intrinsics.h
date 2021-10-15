@@ -92,7 +92,7 @@ namespace Intrinsic {
   /// it.
   ///
   /// The Tys parameter is for intrinsics with overloaded types (e.g., those
-  /// using iAny, fAny, vAny, or iPTRAny).  For a declaration of an overloaded
+  /// using rAny, iAny, fAny, vAny, or iPTRAny).  For a declaration of an overloaded
   /// intrinsic, Tys must provide exactly one type for each overloaded type in
   /// the intrinsic.
   Function *getDeclaration(Module *M, ID id, ArrayRef<Type*> Tys = None);
@@ -159,6 +159,7 @@ namespace Intrinsic {
       AK_AnyFloat,
       AK_AnyVector,
       AK_AnyPointer,
+      AK_AnyRef,
       AK_MatchType = 7
     };
 

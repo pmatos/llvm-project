@@ -235,6 +235,7 @@ let isAny = true in {
   def llvm_anyint_ty     : LLVMType<iAny>;
   def llvm_anyfloat_ty   : LLVMType<fAny>;
   def llvm_anyvector_ty  : LLVMType<vAny>;
+  def llvm_anyref_ty     : LLVMType<rAny>;
 }
 def llvm_i1_ty         : LLVMType<i1>;
 def llvm_i8_ty         : LLVMType<i8>;
@@ -330,6 +331,9 @@ def llvm_v8f64_ty      : LLVMType<v8f64>;    //  8 x double
 def llvm_v16f64_ty     : LLVMType<v16f64>;   // 16 x double
 
 def llvm_vararg_ty     : LLVMType<isVoid>;   // this means vararg here
+
+def llvm_externref_ty  : LLVMType<externref>;
+def llvm_funcref_ty    : LLVMType<funcref>;
 
 //===----------------------------------------------------------------------===//
 // Intrinsic Definitions.

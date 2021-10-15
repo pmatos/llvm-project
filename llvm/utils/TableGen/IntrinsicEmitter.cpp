@@ -250,7 +250,9 @@ enum IIT_Info {
   IIT_STRUCT9 = 49,
   IIT_V256 = 50,
   IIT_AMX  = 51,
-  IIT_PPCF128 = 52
+  IIT_PPCF128 = 52,
+  IIT_EXTERNREF = 53,
+  IIT_FUNCREF = 54
 };
 
 static void EncodeFixedValueType(MVT::SimpleValueType VT,
@@ -284,6 +286,8 @@ static void EncodeFixedValueType(MVT::SimpleValueType VT,
   case MVT::Other: return Sig.push_back(IIT_EMPTYSTRUCT);
   // MVT::isVoid is used to represent varargs here.
   case MVT::isVoid: return Sig.push_back(IIT_VARARG);
+  case MVT::externref: return Sig.push_back(IIT_EXTERNREF);
+  case MVT::funcref: return Sig.push_back(IIT_FUNCREF);
   }
 }
 
@@ -338,9 +342,14 @@ static void EncodeFixedType(Record *R, std::vector<unsigned char> &ArgCodes,
 
   MVT::SimpleValueType VT = getValueType(R->getValueAsDef("VT"));
 
+  // Note: The order in which these cases show up need
+  // to match the inverse order of the respective ArgKind in
+  // Intrinsics.h. The value of Tmp when it reaches MVT::Any needs
+  // to be the value of the respective ArgKind enum.
   unsigned Tmp = 0;
   switch (VT) {
   default: break;
+  case MVT::rAny: ++Tmp;    LLVM_FALLTHROUGH;
   case MVT::iPTRAny: ++Tmp; LLVM_FALLTHROUGH;
   case MVT::vAny: ++Tmp;    LLVM_FALLTHROUGH;
   case MVT::fAny: ++Tmp;    LLVM_FALLTHROUGH;
@@ -412,12 +421,19 @@ static void UpdateArgCodes(Record *R, std::vector<unsigned char> &ArgCodes,
     return;
   }
 
+  // Note: The order in which these cases show up need
+  // to match the inverse order of the respective ArgKind in
+  // Intrinsics.h. The value of Tmp when it reaches MVT::Any needs
+  // to be the value of the respective ArgKind enum.
   unsigned Tmp = 0;
   switch (getValueType(R->getValueAsDef("VT"))) {
   default: break;
   case MVT::iPTR:
     UpdateArgCodes(R->getValueAsDef("ElTy"), ArgCodes, NumInserted, Mapping);
     break;
+  case MVT::rAny:
+    ++Tmp;
+    LLVM_FALLTHROUGH;   
   case MVT::iPTRAny:
     ++Tmp;
     LLVM_FALLTHROUGH;

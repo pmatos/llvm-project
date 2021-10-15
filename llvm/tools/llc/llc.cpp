@@ -532,7 +532,7 @@ static int compileModule(char **argv, LLVMContext &Context) {
         WithColor::error(errs(), argv[0]) << Error;
         exit(1);
       }
-
+        
       // On AIX, setting the relocation model to anything other than PIC is
       // considered a user error.
       if (TheTriple.isOSAIX() && RM.hasValue() && *RM != Reloc::PIC_)
