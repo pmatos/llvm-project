@@ -54,7 +54,7 @@ public:
     LLVM_DEBUG(dbgs() << "********** ISelDAGToDAG **********\n"
                          "********** Function: "
                       << MF.getName() << '\n');
-
+    
     Subtarget = &MF.getSubtarget<WebAssemblySubtarget>();
 
     return SelectionDAGISel::runOnMachineFunction(MF);

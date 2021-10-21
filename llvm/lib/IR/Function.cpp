@@ -1092,11 +1092,9 @@ static void DecodeIITType(unsigned &NextElt, ArrayRef<unsigned char> Infos,
     return;
   case IIT_EXTERNREF:
     OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 10));
-    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Struct, 0));
     return;
   case IIT_FUNCREF:
     OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 20));
-    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Function, 0));
     return;
   case IIT_PTR:
     OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 0));
@@ -1260,8 +1258,6 @@ static Type *DecodeFixedType(ArrayRef<Intrinsic::IITDescriptor> &Infos,
   case IITDescriptor::Float: return Type::getFloatTy(Context);
   case IITDescriptor::Double: return Type::getDoubleTy(Context);
   case IITDescriptor::Quad: return Type::getFP128Ty(Context);
-  // FIXME: this definitely looks strange and might require a rethink of funcref representation
-  case IITDescriptor::Function: return FunctionType::get(0, false);
 
   case IITDescriptor::Integer:
     return IntegerType::get(Context, D.Integer_Width);
@@ -1462,13 +1458,6 @@ static bool matchIntrinsicType(
       while (Infos.front().Kind == IITDescriptor::Pointer)
         Infos = Infos.slice(1);
       Infos = Infos.slice(1);
-      return false;
-    }
-
-    case IITDescriptor::Function: {
-      FunctionType *FTy = dyn_cast<FunctionType>(Ty);
-      if (!FTy)
-        return true;
       return false;
     }
       

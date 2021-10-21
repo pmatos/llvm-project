@@ -533,6 +533,11 @@ static int compileModule(char **argv, LLVMContext &Context) {
         exit(1);
       }
 
+      // Enable Opaque Pointers in Wasm
+      // FIXME: do we need to check if reference types are enabled?
+      if (TheTriple.isWasm())
+        Context.enableOpaquePointers();
+        
       // On AIX, setting the relocation model to anything other than PIC is
       // considered a user error.
       if (TheTriple.isOSAIX() && RM.hasValue() && *RM != Reloc::PIC_)

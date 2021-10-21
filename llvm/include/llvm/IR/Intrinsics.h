@@ -140,8 +140,7 @@ namespace Intrinsic {
       Subdivide2Argument,
       Subdivide4Argument,
       VecOfBitcastsToInt,
-      AMX,
-      Function
+      AMX
     } Kind;
 
     union {
