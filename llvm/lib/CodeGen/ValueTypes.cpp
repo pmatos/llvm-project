@@ -201,7 +201,7 @@ Type *EVT::getTypeForEVT(LLVMContext &Context) const {
   case MVT::x86amx:  return Type::getX86_AMXTy(Context);
   case MVT::i64x8:   return IntegerType::get(Context, 512);
   case MVT::externref:
-    return PointerType::get(Context, 10); // opaque pointer to addrspace(10)
+    return PointerType::get(StructType::create(Context), 10); // opaque pointer to addrspace(10)
   case MVT::funcref:
     return PointerType::get(Context, 20); // opaque pointer to addrspace(20)
   case MVT::v1i1:
