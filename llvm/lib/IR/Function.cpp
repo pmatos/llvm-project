@@ -1092,6 +1092,7 @@ static void DecodeIITType(unsigned &NextElt, ArrayRef<unsigned char> Infos,
     return;
   case IIT_EXTERNREF:
     OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 10));
+    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Struct, 0));
     return;
   case IIT_FUNCREF:
     OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 20));
@@ -1451,13 +1452,16 @@ static bool matchIntrinsicType(
       PointerType *PT = dyn_cast<PointerType>(Ty);
       if (!PT || PT->getAddressSpace() != D.Pointer_AddressSpace)
         return true;
-      if (!PT->isOpaque())
-        return matchIntrinsicType(PT->getElementType(), Infos, ArgTys,
-                                  DeferredChecks, IsDeferredCheck);
-      // Consume IIT descriptors relating to the pointer element type.
-      while (Infos.front().Kind == IITDescriptor::Pointer)
+      if (!PT->isOpaque()) {
+        const bool ret = matchIntrinsicType(PT->getElementType(), Infos, ArgTys,
+                                            DeferredChecks, IsDeferredCheck);
+        // Consume IIT descriptors relating to the pointer element type,
+        // if the pointer is not opaque
+        while (Infos.front().Kind == IITDescriptor::Pointer)
+          Infos = Infos.slice(1);
         Infos = Infos.slice(1);
-      Infos = Infos.slice(1);
+        return ret;
+      }
       return false;
     }
       
