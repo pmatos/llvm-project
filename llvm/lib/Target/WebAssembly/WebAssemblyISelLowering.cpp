@@ -1489,7 +1489,7 @@ bool WebAssemblyTargetLowering::MatchTableForLowering(SelectionDAG &DAG,
     if (GA) {
       // We are in Case 2 above.
       Idx = Base->getOperand(1);
-      if (!Idx || GA->getNumValues() != 1 || Idx->getNumValues() != 1)
+      if (Idx.isUndef() || GA->getNumValues() != 1)
         return false;
     } else {
       // This might be Case 1 above (or an error)
