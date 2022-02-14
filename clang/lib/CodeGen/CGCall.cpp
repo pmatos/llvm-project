@@ -4731,16 +4731,18 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
   if (llvm::StructType *ArgStruct = CallInfo.getArgStruct()) {
     const llvm::DataLayout &DL = CGM.getDataLayout();
     llvm::Instruction *IP = CallArgs.getStackBase();
-    llvm::AllocaInst *AI;
+    auto Align = CallInfo.getArgStructAlignment();
     if (IP) {
       IP = IP->getNextNode();
-      AI = new llvm::AllocaInst(ArgStruct, DL.getAllocaAddrSpace(),
-                                "argmem", IP);
+      unsigned AS = DL.getAllocaAddrSpace();
+      llvm::AllocaInst *AI = new llvm::AllocaInst(ArgStruct, AS, "argmem", IP);
+      AI->setAlignment(Align.getAsAlign());
+      ArgMemory = Address(AI, ArgStruct, Align);
     } else {
-      AI = CreateTempAlloca(ArgStruct, "argmem");
+      LangAS AS = getASTAllocaAddressSpace();
+      ArgMemory = CreateTempAllocaInAS(ArgStruct, Align, AS, "argmem");
     }
-    auto Align = CallInfo.getArgStructAlignment();
-    AI->setAlignment(Align.getAsAlign());
+    auto *AI = cast<llvm::AllocaInst>(ArgMemory.getPointer());
     AI->setUsedWithInAlloca(true);
     assert(AI->isUsedWithInAlloca() && !AI->isStaticAlloca());
     ArgMemory = Address(AI, ArgStruct, Align);
@@ -4890,6 +4892,7 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
         } else if (I->hasLValue()) {
           auto LV = I->getKnownLValue();
           auto AS = LV.getAddressSpace();
+          assert(AS != LangAS::wasm_var);
 
           if (!ArgInfo.getIndirectByVal() ||
               (LV.getAlignment() < getContext().getTypeAlignInChars(I->Ty))) {

@@ -135,6 +135,7 @@ private:
   SDValue LowerFP_TO_INT_SAT(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerLoad(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerStore(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerAddrspaceCast(SDValue Op, SelectionDAG &DAG) const;
 
   // Helper for LoadLoad and LowerStore
   bool MatchTableForLowering(SelectionDAG &DAG, const SDLoc &DL,

@@ -41,8 +41,9 @@ DominatingValue<RValue>::saved_type::save(CodeGenFunction &CGF, RValue rv) {
       return saved_type(V, ScalarLiteral);
 
     // Everything else needs an alloca.
-    Address addr =
-      CGF.CreateDefaultAlignTempAlloca(V->getType(), "saved-rvalue");
+    Address addr = CGF.CreateTempAllocaInAS(
+        V->getType(), CGF.PreferredAlignmentForIRType(V->getType()),
+        CGF.getASTAllocaAddressSpace(), "saved-rvalue");
     CGF.Builder.CreateStore(V, addr);
     return saved_type(addr.getPointer(), ScalarAddress);
   }
@@ -51,7 +52,9 @@ DominatingValue<RValue>::saved_type::save(CodeGenFunction &CGF, RValue rv) {
     CodeGenFunction::ComplexPairTy V = rv.getComplexVal();
     llvm::Type *ComplexTy =
         llvm::StructType::get(V.first->getType(), V.second->getType());
-    Address addr = CGF.CreateDefaultAlignTempAlloca(ComplexTy, "saved-complex");
+    Address addr = CGF.CreateTempAllocaInAS(
+        ComplexTy, CGF.PreferredAlignmentForIRType(ComplexTy),
+        CGF.getASTAllocaAddressSpace(), "saved-complex");
     CGF.Builder.CreateStore(V.first, CGF.Builder.CreateStructGEP(addr, 0));
     CGF.Builder.CreateStore(V.second, CGF.Builder.CreateStructGEP(addr, 1));
     return saved_type(addr.getPointer(), ComplexAddress);
@@ -291,8 +294,9 @@ void EHScopeStack::popNullFixups() {
 
 Address CodeGenFunction::createCleanupActiveFlag() {
   // Create a variable to decide whether the cleanup needs to be run.
-  Address active = CreateTempAllocaWithoutCast(
-      Builder.getInt1Ty(), CharUnits::One(), "cleanup.cond");
+  LangAS AS = getASTAllocaAddressSpace();
+  Address active = CreateTempAllocaInAS(Builder.getInt1Ty(), CharUnits::One(),
+                                        AS, "cleanup.cond");
 
   // Initialize it to false at a site that's guaranteed to be run
   // before each evaluation.
@@ -467,8 +471,9 @@ void CodeGenFunction::PopCleanupBlocks(
     if (AI && AI->isStaticAlloca())
       continue;
 
-    Address Tmp =
-        CreateDefaultAlignTempAlloca(Inst->getType(), "tmp.exprcleanup");
+    Address Tmp = CreateTempAllocaInAS(
+        Inst->getType(), PreferredAlignmentForIRType(Inst->getType()),
+        getASTAllocaAddressSpace(), "tmp.exprcleanup");
 
     // Find an insertion point after Inst and spill it to the temporary.
     llvm::BasicBlock::iterator InsertBefore;
@@ -1311,9 +1316,13 @@ void CodeGenFunction::DeactivateCleanupBlock(EHScopeStack::stable_iterator C,
 }
 
 Address CodeGenFunction::getNormalCleanupDestSlot() {
-  if (!NormalCleanupDest.isValid())
+  if (!NormalCleanupDest.isValid()) {
+    llvm::Type *Ty = Builder.getInt32Ty();
+    CharUnits Align = PreferredAlignmentForIRType(Ty);
+    LangAS AS = getASTAllocaAddressSpace();
     NormalCleanupDest =
-      CreateDefaultAlignTempAlloca(Builder.getInt32Ty(), "cleanup.dest.slot");
+        CreateTempAllocaInAS(Ty, Align, AS, "cleanup.dest.slot");
+  }
   return NormalCleanupDest;
 }
 

@@ -8083,8 +8083,9 @@ void Sema::CheckVariableDeclarationType(VarDecl *NewVD) {
   // This includes arrays of objects with address space qualifiers, but not
   // automatic variables that point to other address spaces.
   // ISO/IEC TR 18037 S5.1.2
-  if (!getLangOpts().OpenCL && NewVD->hasLocalStorage() &&
-      T.getAddressSpace() != LangAS::Default) {
+  if (NewVD->hasLocalStorage() &&
+      T.getAddressSpace() != LangAS::Default &&
+      (!getLangOpts().OpenCL && T.getAddressSpace() != LangAS::wasm_var)) {
     Diag(NewVD->getLocation(), diag::err_as_qualified_auto_decl) << 0;
     NewVD->setInvalidDecl();
     return;
@@ -8184,7 +8185,8 @@ void Sema::CheckVariableDeclarationType(VarDecl *NewVD) {
       } else if (T.getAddressSpace() != LangAS::opencl_private &&
                  // If we are parsing a template we didn't deduce an addr
                  // space yet.
-                 T.getAddressSpace() != LangAS::Default) {
+                 T.getAddressSpace() != LangAS::Default &&
+                 T.getAddressSpace() != LangAS::wasm_var) {
         // Do not allow other address spaces on automatic variable.
         Diag(NewVD->getLocation(), diag::err_as_qualified_auto_decl) << 1;
         NewVD->setInvalidDecl();
@@ -9677,6 +9679,10 @@ Sema::ActOnFunctionDeclarator(Scope *S, Declarator &D, DeclContext *DC,
     }
   }
 
+  if (NewFD->getReturnType().getAddressSpace() == LangAS::wasm_var) {
+    Diag(NewFD->getLocation(), diag::err_wasm_var_return_value);
+    NewFD->setInvalidDecl();
+  }
   if (!getLangOpts().CPlusPlus) {
     // Perform semantic checking on the function declaration.
     if (!NewFD->isInvalidDecl() && NewFD->isMain())
@@ -14115,7 +14121,9 @@ ParmVarDecl *Sema::CheckParameter(DeclContext *DC, SourceLocation StartLoc,
       // OpenCL allows function arguments declared to be an array of a type
       // to be qualified with an address space.
       !(getLangOpts().OpenCL &&
-        (T->isArrayType() || T.getAddressSpace() == LangAS::opencl_private))) {
+        (T->isArrayType() || T.getAddressSpace() == LangAS::opencl_private)) &&
+      // WebAssembly allows locals to be allocated to named locations.
+      T.getAddressSpace() != LangAS::wasm_var) {
     Diag(NameLoc, diag::err_arg_with_address_space);
     New->setInvalidDecl();
   }

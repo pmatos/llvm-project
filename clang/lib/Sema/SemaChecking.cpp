@@ -2333,7 +2333,28 @@ Sema::CheckBuiltinFunctionCall(FunctionDecl *FDecl, unsigned BuiltinID,
            diag::err_hip_invalid_args_builtin_mangled_name);
       return ExprError();
     }
+    break;
   }
+
+  case WebAssembly::BI__builtin_wasm_table_size:
+    if (SemaBuiltinWasmTableSize(TheCall))
+      return ExprError();
+    break;
+
+  case WebAssembly::BI__builtin_wasm_table_grow:
+    if (SemaBuiltinWasmTableGrow(TheCall))
+      return ExprError();
+    break;
+
+  case WebAssembly::BI__builtin_wasm_table_copy:
+    if (SemaBuiltinWasmTableCopy(TheCall))
+      return ExprError();
+    break;
+
+  case WebAssembly::BI__builtin_wasm_table_fill:
+    if (SemaBuiltinWasmTableFill(TheCall))
+      return ExprError();
+    break;
   }
 
   // Since the target specific builtins for each arch overlap, only check those
@@ -6132,6 +6153,160 @@ static bool checkBuiltinArgument(Sema &S, CallExpr *E, unsigned ArgIndex) {
 
   E->setArg(ArgIndex, Arg.get());
   return false;
+}
+
+bool 
+Sema::SemaIsWasmTable(const Expr *E) const {
+  // Check that the argument is indeed as expected an array of wasm reference 
+  // types. 
+  const DeclRefExpr *DRE = cast<DeclRefExpr>(E);
+  const VarDecl *VDecl = cast<VarDecl>(DRE->getDecl());
+  
+  // Expect declaration to be static file local array of a wasm reference type,
+  // otherwise error out.
+  if (VDecl->getStorageClass() != SC_Static ||
+      !VDecl->isFileVarDecl()) 
+    return false;
+
+  TypeSourceInfo *TSI = VDecl->getTypeSourceInfo();
+  QualType QT = TSI->getType();
+  const Type *T = QT.getTypePtr();
+  const ArrayType *AT = dyn_cast<ArrayType>(T);  
+  if (!AT)
+    return false;
+  
+  // We know the type is an array, we need to ensure it's a Constant Array Type of size zero,
+  // with element type as a webassembly reference type
+  // TODO: At some point in the future we might want to allow statically initialized
+  // wasm tables at which point we need to improve this.
+  const ConstantArrayType *CAT = dyn_cast<ConstantArrayType>(AT);
+  if(!CAT || !CAT->getSize().isZero())
+    return false;
+
+  QualType AET = CAT->getElementType();
+  if (!AET->isWebAssemblyReferenceType())
+    return false;
+
+  return true;
+}
+
+bool 
+Sema::SemaIsWasmExternrefTable(const Expr *E) const {
+  if (!SemaIsWasmTable(E))
+    return false;
+
+  const DeclRefExpr *DRE = cast<DeclRefExpr>(E);
+  const VarDecl *VDecl = cast<VarDecl>(DRE->getDecl());
+  TypeSourceInfo *TSI = VDecl->getTypeSourceInfo();
+  QualType QT = TSI->getType();
+  const Type *T = QT.getTypePtr();
+  const ArrayType *AT = dyn_cast<ArrayType>(T);  
+  const ConstantArrayType *CAT = dyn_cast<ConstantArrayType>(AT);
+  QualType AET = CAT->getElementType();
+
+  return AET->isWebAssemblyExternrefType();
+}
+
+bool
+Sema::SemaIsWasmFuncrefTable(const Expr *E) const {
+  if (!SemaIsWasmTable(E))
+    return false;
+
+  const DeclRefExpr *DRE = cast<DeclRefExpr>(E);
+  const VarDecl *VDecl = cast<VarDecl>(DRE->getDecl());
+  TypeSourceInfo *TSI = VDecl->getTypeSourceInfo();
+  QualType QT = TSI->getType();
+  const Type *T = QT.getTypePtr();
+  const ArrayType *AT = dyn_cast<ArrayType>(T);  
+  const ConstantArrayType *CAT = dyn_cast<ConstantArrayType>(AT);
+  QualType AET = CAT->getElementType();
+
+  return AET->isWebAssemblyFuncrefType();
+}
+
+/// This function handles the polymorphic call to the builtin wasm_table_size
+/// which takes a single argument of type externref or funcref array.
+/// This generates either a call to __wasm_table_size_funcref
+/// or __wasm_table_size_externref.
+bool
+Sema::SemaBuiltinWasmTableSize(CallExpr *TheCall) {
+  if (TheCall->getNumArgs() != 1) 
+    return true;
+
+  // Check that the argument is indeed as expected an array of wasm reference 
+  // types. 
+  Expr *TableArg = TheCall->getArg(0);
+
+  // returning true for error
+  return !SemaIsWasmTable(TableArg);
+}
+
+bool
+Sema::SemaBuiltinWasmTableGrow(CallExpr *TheCall) {
+  // table.grow has 1 return type of type int (the old size of the table)
+  // and 3 arguments, a table, and initial value and the size to grow by
+  if (TheCall->getNumArgs() != 3)
+    return true;
+
+  Expr *TableArg = TheCall->getArg(0);
+  Expr *Val = TheCall->getArg(1);
+  Expr *NElems = TheCall->getArg(2);
+  
+  if (!SemaIsWasmTable(TableArg) ||
+      !Val->getType()->isWebAssemblyReferenceType() ||
+      !NElems->getType()->isIntegerType())
+    return true;
+  
+  return false;
+}
+
+bool
+Sema::SemaBuiltinWasmTableFill(CallExpr *TheCall) {
+  // table.fill does not return a value
+  // but it has 4 arguments, a table, the number of elements to fill, 
+  // the value to fill into these elements and the index to start filling 
+  // elements at.
+  if (TheCall->getNumArgs() != 4)
+    return true;
+
+  Expr *TableArg = TheCall->getArg(0);
+  Expr *NElems = TheCall->getArg(1);
+  Expr *Val = TheCall->getArg(2);
+  Expr *StartI = TheCall->getArg(3);
+  
+  if (!SemaIsWasmTable(TableArg) || 
+      !NElems->getType()->isIntegerType() ||
+      !Val->getType()->isWebAssemblyReferenceType() ||
+      !StartI->getType()->isIntegerType())
+    return true;
+  
+  return false;
+}
+
+bool
+Sema::SemaBuiltinWasmTableCopy(CallExpr *TheCall) {
+  // table.copy does not return a value
+  // but it has 5 arguments, two tables - source and destination, the 
+  // number of elements to copy, followed b the source and destination 
+  // indices.
+  if (TheCall->getNumArgs() != 5)
+    return true;
+
+  Expr *TableSrc = TheCall->getArg(0);
+  Expr *TableDest = TheCall->getArg(1);
+  Expr *NElems = TheCall->getArg(2);
+  Expr *ISrc = TheCall->getArg(3);
+  Expr *IDest = TheCall->getArg(4);
+  
+  // FIXME: The tables also need to have the same type
+  if (!SemaIsWasmTable(TableSrc) || 
+      !SemaIsWasmTable(TableDest) ||
+      !NElems->getType()->isIntegerType() ||
+      !ISrc->getType()->isIntegerType() ||
+      !IDest->getType()->isIntegerType())
+    return true;
+  
+  return false;  
 }
 
 /// We have a call to a function like __sync_fetch_and_add, which is an

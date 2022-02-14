@@ -777,3 +777,9 @@ u32x4 relaxed_trunc_zero_u_i32x4_f64x2(f64x2 x) {
   // WEBASSEMBLY: call <4 x i32> @llvm.wasm.relaxed.trunc.zero.unsigned(<2 x double> %x)
   // WEBASSEMBLY-NEXT: ret
 }
+
+__externref_t externref_null() {
+  return __builtin_wasm_externref_null();
+  // WEBASSEMBLY: call @externref @llvm.wasm.externref.null()
+  // WEBASSEMBLY-NEXT: ret
+}

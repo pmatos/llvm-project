@@ -10272,6 +10272,10 @@ def err_openclcxx_placement_new : Error<
 def warn_mig_server_routine_does_not_return_kern_return_t : Warning<
   "'mig_server_routine' attribute only applies to routines that return a kern_return_t">,
   InGroup<IgnoredAttributes>;
+
+// WebAssembly __wasm_var errors.
+def err_wasm_var_return_value : Error<
+  "return value cannot be qualified with '__wasm_var'">;
 } // end of sema category
 
 let CategoryName = "OpenMP Issue" in {

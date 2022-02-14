@@ -94,6 +94,7 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
       setOperationAction(ISD::LOAD, T, Custom);
       setOperationAction(ISD::STORE, T, Custom);
     }
+    setOperationAction(ISD::ADDRSPACECAST, MVT::funcref, Custom);
   }
 
   setOperationAction(ISD::GlobalAddress, MVTPtr, Custom);
@@ -1417,6 +1418,8 @@ SDValue WebAssemblyTargetLowering::LowerOperation(SDValue Op,
   case ISD::CTLZ:
   case ISD::CTTZ:
     return DAG.UnrollVectorOp(Op.getNode());
+  case ISD::ADDRSPACECAST:      
+    return LowerAddrspaceCast(Op, DAG);
   }
 }
 
@@ -2737,4 +2740,9 @@ WebAssemblyTargetLowering::PerformDAGCombine(SDNode *N,
   case ISD::TRUNCATE:
     return performTruncateCombine(N, DCI);
   }
+}
+
+SDValue WebAssemblyTargetLowering::LowerAddrspaceCast(SDValue Op,
+                                                      SelectionDAG &DAG) const {
+  return SDValue();
 }

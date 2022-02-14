@@ -1790,15 +1790,15 @@ void CodeGenFunction::EmitDeleteCall(const FunctionDecl *DeleteFD,
   DeleteArgs.add(RValue::get(DeletePtr), ArgTy);
 
   // Pass the std::destroying_delete tag if present.
-  llvm::AllocaInst *DestroyingDeleteTag = nullptr;
+  Address DestroyingDeleteTag = Address::invalid();
   if (Params.DestroyingDelete) {
     QualType DDTag = *ParamTypeIt++;
     llvm::Type *Ty = getTypes().ConvertType(DDTag);
     CharUnits Align = CGM.getNaturalTypeAlignment(DDTag);
-    DestroyingDeleteTag = CreateTempAlloca(Ty, "destroying.delete.tag");
-    DestroyingDeleteTag->setAlignment(Align.getAsAlign());
-    DeleteArgs.add(
-        RValue::getAggregate(Address(DestroyingDeleteTag, Ty, Align)), DDTag);
+    LangAS AS = getASTAllocaAddressSpace();
+    DestroyingDeleteTag =
+        CreateTempAllocaInAS(Ty, Align, AS, "destroying.delete.tag");
+    DeleteArgs.add(RValue::getAggregate(DestroyingDeleteTag), DDTag);
   }
 
   // Pass the size if the delete function has a size_t parameter.
@@ -1839,8 +1839,11 @@ void CodeGenFunction::EmitDeleteCall(const FunctionDecl *DeleteFD,
 
   // If call argument lowering didn't use the destroying_delete_t alloca,
   // remove it again.
-  if (DestroyingDeleteTag && DestroyingDeleteTag->use_empty())
-    DestroyingDeleteTag->eraseFromParent();
+  if (DestroyingDeleteTag.isValid()) {
+    auto *Inst = cast<llvm::Instruction>(DestroyingDeleteTag.getPointer());
+    if (Inst->use_empty())
+      Inst->eraseFromParent();
+  }
 }
 
 namespace {

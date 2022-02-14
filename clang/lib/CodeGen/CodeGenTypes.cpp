@@ -625,6 +625,18 @@ llvm::Type *CodeGenTypes::ConvertType(QualType T) {
                                            Info.EC.getKnownMinValue() *
                                            Info.NumVectors);
     }
+#define WASM_REF_TYPE(Name, MangledName, Id, SingletonId, AS)           \
+    case BuiltinType::Id:                                               \
+      {                                                                 \
+        if (BuiltinType::Id == BuiltinType::WasmExternRef)              \
+          ResultType = CGM.getTargetCodeGenInfo()                       \
+                          .getWasmExternrefReferenceType();             \
+        else                                                            \
+          ResultType = CGM.getTargetCodeGenInfo()                       \
+                          .getWasmFuncrefReferenceType();               \
+      }                                                                 \
+      break;
+#include "clang/Basic/WebAssemblyReferenceTypes.def"
    case BuiltinType::Dependent:
 #define BUILTIN_TYPE(Id, SingletonId)
 #define PLACEHOLDER_TYPE(Id, SingletonId) \

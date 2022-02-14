@@ -18188,6 +18188,70 @@ Value *CodeGenFunction::EmitWebAssemblyBuiltinExpr(unsigned BuiltinID,
     Function *Callee = CGM.getIntrinsic(IntNo, ConvertType(E->getType()));
     return Builder.CreateCall(Callee, Value);
   }
+  case WebAssembly::BI__builtin_wasm_ref_null_extern: {
+    Function *Callee = CGM.getIntrinsic(Intrinsic::wasm_ref_null_extern);
+    return Builder.CreateCall(Callee);
+  }
+  case WebAssembly::BI__builtin_wasm_ref_null_func: {
+    Function *Callee = CGM.getIntrinsic(Intrinsic::wasm_ref_null_func);
+    return Builder.CreateCall(Callee);
+  }
+  case WebAssembly::BI__builtin_wasm_table_size: {
+    assert(E->getArg(0)->getType()->isArrayType());
+    // Get Value as a cast to void in Address Space 1 which is where wasm vars live
+    // FIXME: remove hard coded address space 1
+    Value *Value = EmitCastToVoidPtr(EmitArrayToPointerDecay(E->getArg(0)).getPointer(), 1);
+    Function *Callee = CGM.getIntrinsic(Intrinsic::wasm_table_size);
+    return Builder.CreateCall(Callee, Value);
+  }
+  case WebAssembly::BI__builtin_wasm_table_fill: {
+    assert(E->getArg(0)->getType()->isArrayType());
+    // Get Value as a cast to void in Address Space 1 which is where wasm vars live
+    // FIXME: remove hard coded address space 1
+    Value *Table = EmitCastToVoidPtr(EmitArrayToPointerDecay(E->getArg(0)).getPointer(), 1);
+    Value *NElems = EmitScalarExpr(E->getArg(1));
+    Value *Val = EmitScalarExpr(E->getArg(2));
+    Value *StartI = EmitScalarExpr(E->getArg(3));
+    Function *Callee = 0;
+    if (E->getArg(2)->getType()->isWebAssemblyFuncrefType())
+      Callee = CGM.getIntrinsic(Intrinsic::wasm_table_fill_funcref);
+    else if (E->getArg(2)->getType()->isWebAssemblyExternrefType())
+      Callee = CGM.getIntrinsic(Intrinsic::wasm_table_fill_externref);
+    else
+      llvm_unreachable("unexpected webassembly reference type in builtin __builtin_wasm_table_fill");
+    return Builder.CreateCall(Callee, {Table, NElems, Val, StartI});
+  }
+  case WebAssembly::BI__builtin_wasm_table_grow: {
+    assert(E->getArg(0)->getType()->isArrayType());
+    // Get Value as a cast to void in Address Space 1 which is where wasm vars live
+    // FIXME: remove hard coded address space 1
+    Value *Table = EmitCastToVoidPtr(EmitArrayToPointerDecay(E->getArg(0)).getPointer(), 1);
+    Value *Val = EmitScalarExpr(E->getArg(1));
+    Value *NElems = EmitScalarExpr(E->getArg(2));
+    
+    Function *Callee = 0;
+    if (E->getArg(1)->getType()->isWebAssemblyFuncrefType())
+      Callee = CGM.getIntrinsic(Intrinsic::wasm_table_grow_funcref);
+    else if (E->getArg(1)->getType()->isWebAssemblyExternrefType())
+      Callee = CGM.getIntrinsic(Intrinsic::wasm_table_grow_externref);
+    else
+      llvm_unreachable("unexpected webassembly reference type in builtin __builtin_wasm_table_grow");
+      
+    return Builder.CreateCall(Callee, {Table, Val, NElems});
+  }
+  case WebAssembly::BI__builtin_wasm_table_copy: {
+    assert(E->getArg(0)->getType()->isArrayType() &&
+           E->getArg(1)->getType()->isArrayType());
+    // Get Value as a cast to void in Address Space 1 which is where wasm vars live
+    // FIXME: remove hard coded address space 1
+    Value *TableSrc = EmitCastToVoidPtr(EmitArrayToPointerDecay(E->getArg(0)).getPointer(), 1);
+    Value *TableDest = EmitCastToVoidPtr(EmitArrayToPointerDecay(E->getArg(1)).getPointer(), 1);
+    Value *NElems = EmitScalarExpr(E->getArg(2));
+    Value *ISrc = EmitScalarExpr(E->getArg(3));
+    Value *IDest = EmitScalarExpr(E->getArg(4));
+    Function *Callee = CGM.getIntrinsic(Intrinsic::wasm_table_copy);
+    return Builder.CreateCall(Callee, {TableSrc, TableDest, NElems, ISrc, IDest});
+  }
   case WebAssembly::BI__builtin_wasm_swizzle_i8x16: {
     Value *Src = EmitScalarExpr(E->getArg(0));
     Value *Indices = EmitScalarExpr(E->getArg(1));
@@ -18309,7 +18373,7 @@ Value *CodeGenFunction::EmitWebAssemblyBuiltinExpr(unsigned BuiltinID,
       IntNo = Intrinsic::wasm_extadd_pairwise_unsigned;
       break;
     default:
-      llvm_unreachable("unexptected builtin ID");
+      llvm_unreachable("unexpected builtin ID");
     }
 
     Function *Callee = CGM.getIntrinsic(IntNo, ConvertType(E->getType()));

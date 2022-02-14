@@ -114,21 +114,6 @@ public:
     return CGBuilderBaseTy::CreateStore(Val, Addr, IsVolatile);
   }
 
-  /// Emit a load from an i1 flag variable.
-  llvm::LoadInst *CreateFlagLoad(llvm::Value *Addr,
-                                 const llvm::Twine &Name = "") {
-    assert(llvm::cast<llvm::PointerType>(Addr->getType())
-               ->isOpaqueOrPointeeTypeMatches(getInt1Ty()));
-    return CreateAlignedLoad(getInt1Ty(), Addr, CharUnits::One(), Name);
-  }
-
-  /// Emit a store to an i1 flag variable.
-  llvm::StoreInst *CreateFlagStore(bool Value, llvm::Value *Addr) {
-    assert(llvm::cast<llvm::PointerType>(Addr->getType())
-               ->isOpaqueOrPointeeTypeMatches(getInt1Ty()));
-    return CreateAlignedStore(getInt1(Value), Addr, CharUnits::One());
-  }
-
   // Temporarily use old signature; clang will be updated to an Address overload
   // in a subsequent patch.
   llvm::AtomicCmpXchgInst *

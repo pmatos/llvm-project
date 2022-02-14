@@ -2966,6 +2966,12 @@ void CastOperation::CheckCStyleCast() {
       }
     }
 
+    // WebAssembly - Allow casts from function pointer types to funcrefs
+    if (DestType->isWebAssemblyFuncrefType() && SrcType->isFunctionPointerType()) {
+      Kind = CK_BitCast;
+      return;
+    }
+     
     // Reject any other conversions to non-scalar types.
     Self.Diag(OpRange.getBegin(), diag::err_typecheck_cond_expect_scalar)
       << DestType << SrcExpr.get()->getSourceRange();

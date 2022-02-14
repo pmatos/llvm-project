@@ -25,6 +25,7 @@
 #include "llvm/Support/KnownBits.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
+#include "Utils/WebAssemblyTypeUtilities.h"
 
 using namespace llvm;
 
@@ -62,6 +63,7 @@ public:
 
   void PreprocessISelDAG() override;
 
+  void SelectAddrSpaceCast(SDNode *Node);
   void Select(SDNode *Node) override;
 
   bool SelectInlineAsmMemoryOperand(const SDValue &Op, unsigned ConstraintID,
@@ -257,7 +259,9 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
     ReplaceNode(Node, CallResults);
     return;
   }
-
+  case ISD::ADDRSPACECAST: 
+    SelectAddrSpaceCast(Node);
+    return;
   default:
     break;
   }
@@ -280,6 +284,23 @@ bool WebAssemblyDAGToDAGISel::SelectInlineAsmMemoryOperand(
 
   return true;
 }
+
+void WebAssemblyDAGToDAGISel::SelectAddrSpaceCast(SDNode *Node) {
+  SDValue Src = Node->getOperand(0);
+  AddrSpaceCastSDNode *CastN = cast<AddrSpaceCastSDNode>(Node);
+  unsigned SrcAddrSpace = CastN->getSrcAddressSpace();
+  unsigned DstAddrSpace = CastN->getDestAddressSpace();
+  assert(SrcAddrSpace == WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_FUNCREF &&
+         "addrspacecasts are only implemented for source funcref addrspaces");
+  // FIXME: can we find a way not to hardcode 0 here?
+  assert(DstAddrSpace == 0 && 
+         "addrspacecasts destination AS should be the default (0) addrspace");
+  
+  
+
+
+  return;
+} 
 
 /// This pass converts a legalized DAG into a WebAssembly-specific DAG, ready
 /// for instruction scheduling.

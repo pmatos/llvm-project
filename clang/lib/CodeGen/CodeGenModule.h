@@ -845,6 +845,19 @@ public:
   /// in AST is always in default address space.
   LangAS GetGlobalConstantAddressSpace() const;
 
+  /// FIXME
+  LangAS GetGlobalConstantAddressSpace(QualType Ty) const {
+    return GetGlobalConstantAddressSpace();
+  };
+
+  /// FIXME
+  bool GlobalConstantNeedsAddrSpaceCast(LangAS FromAS, LangAS ToAS) const {
+    return FromAS != ToAS;
+  };
+  bool GlobalVariableNeedsAddrSpaceCast(LangAS FromAS, LangAS ToAS) const {
+    return FromAS != ToAS;
+  };
+
   /// Return the llvm::Constant for the address of the given global variable.
   /// If Ty is non-null and if the global doesn't exist, then it will be created
   /// with the specified type instead of whatever the normal requested type
