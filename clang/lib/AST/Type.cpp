@@ -2308,6 +2308,25 @@ bool Type::isSizelessBuiltinType() const {
   return false;
 }
 
+bool Type::isWebAssemblyReferenceType() const {
+  return isWebAssemblyFuncrefType() ||
+    isWebAssemblyExternrefType();
+}
+
+bool Type::isWebAssemblyFuncrefType() const {
+  const BuiltinType *BT = getAs<BuiltinType>();
+  if (BT && BT->getKind() == BuiltinType::WasmFuncRef)
+    return true;
+  return false;
+}
+
+bool Type::isWebAssemblyExternrefType() const {
+  const BuiltinType *BT = getAs<BuiltinType>();
+  if (BT && BT->getKind() == BuiltinType::WasmExternRef)
+    return true;
+  return false;
+}
+
 bool Type::isSizelessType() const { return isSizelessBuiltinType(); }
 
 bool Type::isVLSTBuiltinType() const {

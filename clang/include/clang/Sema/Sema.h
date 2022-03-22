@@ -12861,6 +12861,16 @@ private:
   ExprResult SemaBuiltinMatrixColumnMajorStore(CallExpr *TheCall,
                                                ExprResult CallResult);
 
+  // WebAssembly builtin handling
+  bool SemaIsWasmTable(const Expr *E) const;
+  bool SemaIsWasmExternrefTable(const Expr *E) const;
+  bool SemaIsWasmFuncrefTable(const Expr *E) const;
+
+  bool SemaBuiltinWasmTableSize(CallExpr *TheCall);
+  bool SemaBuiltinWasmTableGrow(CallExpr *TheCall);
+  bool SemaBuiltinWasmTableCopy(CallExpr *TheCall);
+  bool SemaBuiltinWasmTableFill(CallExpr *TheCall);
+
 public:
   enum FormatStringType {
     FST_Scanf,

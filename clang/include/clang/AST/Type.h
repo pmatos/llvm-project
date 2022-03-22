@@ -1902,6 +1902,11 @@ public:
   bool isSizelessType() const;
   bool isSizelessBuiltinType() const;
 
+  /// Check if this is a WebAssembly Reference Type.
+  bool isWebAssemblyReferenceType() const;
+  bool isWebAssemblyExternrefType() const;
+  bool isWebAssemblyFuncrefType() const;
+
   /// Determines if this is a sizeless type supported by the
   /// 'arm_sve_vector_bits' type attribute, which can be applied to a single
   /// SVE vector or predicate, excluding tuple types such as svint32x4_t.

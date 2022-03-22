@@ -184,5 +184,15 @@ TARGET_BUILTIN(__builtin_wasm_relaxed_trunc_u_i32x4_f32x4, "V4UiV4f", "nc", "rel
 TARGET_BUILTIN(__builtin_wasm_relaxed_trunc_zero_s_i32x4_f64x2, "V4iV2d", "nc", "relaxed-simd")
 TARGET_BUILTIN(__builtin_wasm_relaxed_trunc_zero_u_i32x4_f64x2, "V4UiV2d", "nc", "relaxed-simd")
 
+// Reference Types builtins
+// Some builtins are polymorphic - see 't' as part of the third argument,
+// in which case the argument spec (second argument) is unused.
+TARGET_BUILTIN(__builtin_wasm_ref_null_extern, "e", "nc", "reference-types")
+TARGET_BUILTIN(__builtin_wasm_ref_null_func, "k", "nc", "reference-types")
+TARGET_BUILTIN(__builtin_wasm_table_size, "ii", "nt", "reference-types")
+TARGET_BUILTIN(__builtin_wasm_table_grow, "iiii", "nt", "reference-types")
+TARGET_BUILTIN(__builtin_wasm_table_copy, "viiiii", "t", "reference-types")
+TARGET_BUILTIN(__builtin_wasm_table_fill, "viiii", "t", "reference-types")
+
 #undef BUILTIN
 #undef TARGET_BUILTIN
