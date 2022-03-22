@@ -4220,7 +4220,7 @@ CodeGenModule::GetOrCreateLLVMGlobal(StringRef MangledName, llvm::Type *Ty,
       D ? D->getType().getAddressSpace()
         : (LangOpts.OpenCL ? LangAS::opencl_global : LangAS::Default);
   assert(getContext().getTargetAddressSpace(ExpectedAS) == TargetAS);
-  if (DAddrSpace != ExpectedAS) {
+  if (GlobalVariableNeedsAddrSpaceCast(DAddrSpace, ExpectedAS)) {
     return getTargetCodeGenInfo().performAddrSpaceCast(
         *this, GV, DAddrSpace, ExpectedAS, Ty->getPointerTo(TargetAS));
   }
@@ -4430,7 +4430,8 @@ castStringLiteralToDefaultAddressSpace(CodeGenModule &CGM,
   llvm::Constant *Cast = GV;
   if (!CGM.getLangOpts().OpenCL) {
     auto AS = CGM.GetGlobalConstantAddressSpace();
-    if (AS != LangAS::Default)
+    // whether a cast is necessary is a target property...
+    if (CGM.GlobalConstantNeedsAddrSpaceCast(AS, LangAS::Default))
       Cast = CGM.getTargetCodeGenInfo().performAddrSpaceCast(
           CGM, GV, AS, LangAS::Default,
           GV->getValueType()->getPointerTo(
@@ -5766,7 +5767,7 @@ ConstantAddress CodeGenModule::GetAddrOfGlobalTemporary(
   if (VD->getTLSKind())
     setTLSMode(GV, *VD);
   llvm::Constant *CV = GV;
-  if (AddrSpace != LangAS::Default)
+  if (GlobalConstantNeedsAddrSpaceCast(AddrSpace, LangAS::Default))
     CV = getTargetCodeGenInfo().performAddrSpaceCast(
         *this, GV, AddrSpace, LangAS::Default,
         Type->getPointerTo(

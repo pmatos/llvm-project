@@ -112,15 +112,23 @@ packArgsIntoNVPTXFormatBuffer(CodeGenFunction *CGF, const CallArgList &Args) {
     // that the alignment of the llvm type was the same as the alignment of the
     // clang type.
     llvm::Type *AllocaTy = llvm::StructType::create(ArgTypes, "printf_args");
-    llvm::Value *Alloca = CGF->CreateTempAlloca(AllocaTy);
+    CharUnits Align = CGF->PreferredAlignmentForIRType(AllocaTy);
+    LangAS AS = CGF->getASTAllocaAddressSpace();
+    Address Alloca = CGF->CreateTempAllocaInAS(AllocaTy, Align, AS);
 
     for (unsigned I = 1, NumArgs = Args.size(); I < NumArgs; ++I) {
-      llvm::Value *P = Builder.CreateStructGEP(AllocaTy, Alloca, I - 1);
+      Address P = Builder.CreateStructGEP(Alloca, I - 1);
       llvm::Value *Arg = Args[I].getRValue(*CGF).getScalarVal();
-      Builder.CreateAlignedStore(Arg, P, DL.getPrefTypeAlign(Arg->getType()));
+      // FIXME: Changing the following line to Builder.CreateStore(Arg, P)
+      // results in a test failure in OpenMP/nvptx_target_printf_codegen, in
+      // that a store of an i32 is expected to have alignment 4 on a 64-bit
+      // target, but using the alignment from P results in a store with
+      // alignment 8.  Could this actually be correct?
+      Builder.CreateAlignedStore(Arg, P.getPointer(),
+                                      DL.getPrefTypeAlign(Arg->getType()));
     }
-    llvm::Value *BufferPtr =
-        Builder.CreatePointerCast(Alloca, llvm::Type::getInt8PtrTy(Ctx));
+    llvm::Value *BufferPtr = 
+      Builder.CreatePointerCast(Alloca.getPointer(), llvm::Type::getInt8PtrTy(Ctx));
     return {BufferPtr, DL.getTypeAllocSize(AllocaTy)};
   }
 }
