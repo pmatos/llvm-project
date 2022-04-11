@@ -31,6 +31,7 @@ def int_wasm_memory_grow : Intrinsic<[llvm_anyint_ty],
 //===----------------------------------------------------------------------===//
 def int_wasm_ref_null_extern : Intrinsic<[llvm_externref_ty], [], [IntrNoMem]>;
 def int_wasm_ref_null_func : Intrinsic<[llvm_funcref_ty], [], [IntrNoMem]>;
+def int_wasm_ref_is_null : Intrinsic<[llvm_i32_ty], [llvm_any_ty], [IntrNoMem]>;
 
 //===----------------------------------------------------------------------===//
 // Table intrinsics

@@ -6,6 +6,7 @@
 
 declare %externref @llvm.wasm.ref.null.extern() nounwind
 declare %funcref @llvm.wasm.ref.null.func() nounwind
+declare i32 @llvm.wasm.ref.is_null() nounwind
 
 define %externref @get_null_extern() {
 ; CHECK-LABEL: get_null_extern:
@@ -23,4 +24,24 @@ define %funcref @get_null_func() {
 ; CHECK-NEXT:  end_function
   %null = call %funcref @llvm.wasm.ref.null.func()
   ret %funcref %null
+}
+
+define i32 @ref_is_null_eref(%extenref %eref) {
+  ; CHECK-LABEL: ref_is_null:
+  ; CHECK-NEXT: .functype      ref_is_null (externref) -> (i32)
+  %null = call %externref @llvm.wasm.ref.null.extern()
+  %is_null = call i32 @llvm.wasm.ref.is_null(%externref %null)
+  %arg_is_null = call i32 @llvm.wasm.ref.is_null(%externref %eref)
+  %res = i32 add nsw i32 %is_null, i32 %arg_is_null
+  ret i32 %res
+}
+
+define i32 @ref_is_null_fref(%funcref %fref) {
+  ; CHECK-LABEL: ref_is_null:
+  ; CHECK-NEXT: .functype      ref_is_null (externref) -> (i32)
+  %null = call %funcref @llvm.wasm.ref.null.func()
+  %is_null = call i32 @llvm.wasm.ref.is_null(%funcref %null)
+  %arg_is_null = call i32 @llvm.wasm.ref.is_null(%funcref %fref)
+  %res = i32 add nsw i32 %is_null, i32 %arg_is_null
+  ret i32 %res
 }
