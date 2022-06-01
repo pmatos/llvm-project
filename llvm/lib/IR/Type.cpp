@@ -304,6 +304,12 @@ PointerType *Type::getInt64PtrTy(LLVMContext &C, unsigned AS) {
   return getInt64Ty(C)->getPointerTo(AS);
 }
 
+Type *Type::getWasm_ExternrefTy(LLVMContext &C) {
+  // pointer to opaque struct in addrspace(10)
+  static PointerType *Ty = PointerType::get(StructType::get(C), 10);
+  return Ty;
+}
+
 //===----------------------------------------------------------------------===//
 //                       IntegerType Implementation
 //===----------------------------------------------------------------------===//
