@@ -29,20 +29,22 @@ static const unsigned NVPTXAddrSpaceMap[] = {
     4, // opencl_constant
     0, // opencl_private
     // FIXME: generic has to be added to the target
-    0, // opencl_generic
-    1, // opencl_global_device
-    1, // opencl_global_host
-    1, // cuda_device
-    4, // cuda_constant
-    3, // cuda_shared
-    1, // sycl_global
-    1, // sycl_global_device
-    1, // sycl_global_host
-    3, // sycl_local
-    0, // sycl_private
-    0, // ptr32_sptr
-    0, // ptr32_uptr
-    0  // ptr64
+    0,  // opencl_generic
+    1,  // opencl_global_device
+    1,  // opencl_global_host
+    1,  // cuda_device
+    4,  // cuda_constant
+    3,  // cuda_shared
+    1,  // sycl_global
+    1,  // sycl_global_device
+    1,  // sycl_global_host
+    3,  // sycl_local
+    0,  // sycl_private
+    0,  // ptr32_sptr
+    0,  // ptr32_uptr
+    0,  // ptr64
+    1,  // wasm_var
+    10, // wasm_externref
 };
 
 /// The DWARF address class. Taken from

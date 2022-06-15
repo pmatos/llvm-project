@@ -33,14 +33,16 @@ static const unsigned DirectXAddrSpaceMap[] = {
     0, // cuda_constant
     0, // cuda_shared
     // SYCL address space values for this map are dummy
-    0, // sycl_global
-    0, // sycl_global_device
-    0, // sycl_global_host
-    0, // sycl_local
-    0, // sycl_private
-    0, // ptr32_sptr
-    0, // ptr32_uptr
-    0  // ptr64
+    0,  // sycl_global
+    0,  // sycl_global_device
+    0,  // sycl_global_host
+    0,  // sycl_local
+    0,  // sycl_private
+    0,  // ptr32_sptr
+    0,  // ptr32_uptr
+    0,  // ptr64
+    1,  // wasm_var
+    10, // wasm_externref
 };
 
 class LLVM_LIBRARY_VISIBILITY DirectXTargetInfo : public TargetInfo {

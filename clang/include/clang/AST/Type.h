@@ -1968,6 +1968,9 @@ public:
   bool isSizelessType() const;
   bool isSizelessBuiltinType() const;
 
+  /// Check if this is a WebAssembly Reference Type.
+  bool isWebAssemblyReferenceType() const;
+  bool isWebAssemblyExternrefType() const;
   /// Determines if this is a sizeless type supported by the
   /// 'arm_sve_vector_bits' type attribute, which can be applied to a single
   /// SVE vector or predicate, excluding tuple types such as svint32x4_t.
@@ -2578,6 +2581,9 @@ public:
 // RVV Types
 #define RVV_TYPE(Name, Id, SingletonId) Id,
 #include "clang/Basic/RISCVVTypes.def"
+// WebAssembly reference types
+#define WASM_TYPE(Name, Id, SingletonId) Id,
+#include "clang/Basic/WebAssemblyReferenceTypes.def"
 // All other builtin types
 #define BUILTIN_TYPE(Id, SingletonId) Id,
 #define LAST_BUILTIN_TYPE(Id) LastKind = Id
