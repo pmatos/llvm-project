@@ -193,5 +193,9 @@ TARGET_BUILTIN(__builtin_wasm_dot_i8x16_i7x16_add_s_i32x4, "V4iV16ScV16ScV4i", "
 // Some builtins are polymorphic - see 't' as part of the third argument,
 // in which case the argument spec (second argument) is unused.
 TARGET_BUILTIN(__builtin_wasm_ref_null_extern, "e", "nc", "reference-types")
+// A funcref represented as a function pointer with the funcref attribute
+// attached to the type, therefore SemaChecking will check for the right
+// return type.
+TARGET_BUILTIN(__builtin_wasm_ref_null_func, "i", "nct", "reference-types")
 #undef BUILTIN
 #undef TARGET_BUILTIN

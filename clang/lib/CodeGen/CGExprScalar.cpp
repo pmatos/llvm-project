@@ -2036,6 +2036,17 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
     Value *Src = Visit(const_cast<Expr*>(E));
     llvm::Type *SrcTy = Src->getType();
     llvm::Type *DstTy = ConvertType(DestTy);
+
+    // If the destination type is a WebAssembly Funcref then, we allow the
+    // types to have different address spaces and the one not in the 
+    // funcref address space is converted at this point.
+    if (DestTy->isWebAssemblyFuncrefType()) {
+      llvm::PointerType *PtrTy = cast<llvm::PointerType>(DstTy);
+      // FIXME: hardcoded addrspace, should be               
+      // llvm::WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_FUNCREF
+      DstTy = llvm::PointerType::getWithSamePointeeType(PtrTy, 20);
+    }
+
     if (SrcTy->isPtrOrPtrVectorTy() && DstTy->isPtrOrPtrVectorTy() &&
         SrcTy->getPointerAddressSpace() != DstTy->getPointerAddressSpace()) {
       llvm_unreachable("wrong cast for pointers in different address spaces"

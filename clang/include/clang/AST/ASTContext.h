@@ -1495,6 +1495,9 @@ public:
   /// Return a WebAssembly externref type
   QualType getExternrefType() const;
 
+  /// Return a WebAssembly funcref type
+  QualType getFuncrefType() const;
+  
   /// Return the unique reference to a vector type of the specified
   /// element type and size.
   ///

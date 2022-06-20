@@ -951,6 +951,7 @@ static const LangASMap *getAddressSpaceMap(const TargetInfo &T,
         12, // ptr64
         1,  // wasm_var
         10, // wasm_externref,
+        20, // wasm_funcref
     };
     return &FakeAddrSpaceMap;
   } else {
@@ -3987,6 +3988,14 @@ QualType ASTContext::getExternrefType() const {
     return SingletonId;
 #include "clang/Basic/WebAssemblyReferenceTypes.def"
   }
+  return QualType();
+}
+
+/// getFuncrefType - Return a WebAssembly funcref type, which represents an
+/// opaque reference to a function.
+QualType ASTContext::getFuncrefType() const {
+  // FIXME: this cannot be written because there's no single funcref type 
+  // anymore
   return QualType();
 }
 

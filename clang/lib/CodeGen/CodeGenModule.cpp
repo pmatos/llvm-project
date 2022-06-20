@@ -5108,6 +5108,15 @@ void CodeGenModule::EmitGlobalFunctionDefinition(GlobalDecl GD,
   const CGFunctionInfo &FI = getTypes().arrangeGlobalDeclaration(GD);
   llvm::FunctionType *Ty = getTypes().GetFunctionType(FI);
 
+  // If FI FunctionType is a WebAssembly funcref,
+  // then transform Ty so that it points to the funcref AS
+  if (D->getReturnType()->isWebAssemblyFuncrefType()) {
+    llvm::PointerType *PtrTy = dyn_cast<llvm::PointerType>(Ty->getReturnType());
+    assert(PtrTy);
+    Ty = llvm::FunctionType::get(llvm::PointerType::getWithSamePointeeType(PtrTy, 20),
+                                 Ty->params(), Ty->isVarArg()); 
+  }
+
   // Get or create the prototype for the function.
   if (!GV || (GV->getValueType() != Ty))
     GV = cast<llvm::GlobalValue>(GetAddrOfFunction(GD, Ty, /*ForVTable=*/false,

@@ -399,6 +399,7 @@ llvm::Type *CodeGenTypes::ConvertFunctionTypeInternal(QualType QFT) {
 
 /// ConvertType - Convert the specified type to its LLVM form.
 llvm::Type *CodeGenTypes::ConvertType(QualType T) {
+  const bool isWebAssemblyFuncref = T.getTypePtr()->isWebAssemblyFuncrefType();
   T = Context.getCanonicalType(T);
 
   const Type *Ty = T.getTypePtr();
@@ -415,6 +416,19 @@ llvm::Type *CodeGenTypes::ConvertType(QualType T) {
                          .getCUDADeviceBuiltinTextureDeviceType())
         return Ty;
     }
+  }
+
+  if (isWebAssemblyFuncref) {
+    // Copies what we do later for PointerType but takes Funcref attribute into
+    // consideration. We cannot this reach caching which doesn't take the 
+    // funcref attribute into consideration.
+    const PointerType *PTy = cast<PointerType>(Ty);
+    QualType ETy = PTy->getPointeeType();
+    llvm::Type *PointeeType = ConvertTypeForMem(ETy);
+    if (PointeeType->isVoidTy())
+      PointeeType = llvm::Type::getInt8Ty(getLLVMContext());
+    llvm::Type *FuncTy = llvm::PointerType::get(PointeeType, 20 /*FixMe hardcoded AS*/);
+    return FuncTy;
   }
 
   // RecordTypes are cached and processed specially.

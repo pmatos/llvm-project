@@ -45,6 +45,7 @@ static const unsigned SPIRDefIsPrivMap[] = {
     0,  // ptr64
     1,  // wasm_var
     10, // wasm_externref
+    20, // wasm_funcref
 };
 
 // Used by both the SPIR and SPIR-V targets.
@@ -64,18 +65,19 @@ static const unsigned SPIRDefIsGenMap[] = {
     // cuda_constant pointer can be casted to default/"flat" pointer, but in
     // SPIR-V casts between constant and generic pointers are not allowed. For
     // this reason cuda_constant is mapped to SPIR-V CrossWorkgroup.
-    1,  // cuda_constant
-    3,  // cuda_shared
-    1,  // sycl_global
-    5,  // sycl_global_device
-    6,  // sycl_global_host
-    3,  // sycl_local
-    0,  // sycl_private
-    0,  // ptr32_sptr
-    0,  // ptr32_uptr
-    0,  // ptr64
-    1,  // wasm_var
-    10, // wasm_externref
+    1, // cuda_constant
+    3, // cuda_shared
+    1, // sycl_global
+    5, // sycl_global_device
+    6, // sycl_global_host
+    3, // sycl_local
+    0, // sycl_private
+    0, // ptr32_sptr
+    0, // ptr32_uptr
+    0, // ptr64
+    1, // wasm_var
+    10,// wasm_externref
+    20,// wasm_funcref
 };
 
 // Base class for SPIR and SPIR-V target info.

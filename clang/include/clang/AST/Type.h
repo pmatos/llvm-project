@@ -1482,8 +1482,12 @@ public:
     return Quals.getObjCLifetime();
   }
 
-  bool hasAddressSpace() const { return Quals.hasAddressSpace(); }
-  LangAS getAddressSpace() const { return Quals.getAddressSpace(); }
+  bool hasAddressSpace() const { 
+    return Quals.hasAddressSpace(); 
+  }
+  LangAS getAddressSpace() const {
+    return Quals.getAddressSpace(); 
+  }
 
   const Type *getBaseType() const { return BaseType; }
 
@@ -1971,6 +1975,8 @@ public:
   /// Check if this is a WebAssembly Reference Type.
   bool isWebAssemblyReferenceType() const;
   bool isWebAssemblyExternrefType() const;
+  bool isWebAssemblyFuncrefType() const;
+
   /// Determines if this is a sizeless type supported by the
   /// 'arm_sve_vector_bits' type attribute, which can be applied to a single
   /// SVE vector or predicate, excluding tuple types such as svint32x4_t.
@@ -6684,6 +6690,9 @@ inline bool QualType::hasAddressSpace() const {
 
 /// Return the address space of this type.
 inline LangAS QualType::getAddressSpace() const {
+  if (getTypePtr()->isWebAssemblyFuncrefType()) {
+    return LangAS::wasm_funcref;
+  }
   return getQualifiers().getAddressSpace();
 }
 
@@ -6849,6 +6858,11 @@ inline bool Type::isFunctionPointerType() const {
     return T->getPointeeType()->isFunctionType();
   else
     return false;
+}
+
+inline bool Type::isWebAssemblyFuncrefType() const {
+  return isFunctionPointerType() && 
+    hasAttr(attr::WebAssemblyFuncref);
 }
 
 inline bool Type::isFunctionReferenceType() const {

@@ -8106,6 +8106,27 @@ static void HandleArmMveStrictPolymorphismAttr(TypeProcessingState &State,
                               CurType, CurType);
 }
 
+static void HandleWebAssemblyFuncrefAttr(TypeProcessingState &State,
+                                         QualType &CurType,
+                                         ParsedAttr &Attr) {
+  if (!CurType->isFunctionPointerType()) {
+    State.getSema().Diag(Attr.getLoc(), 
+                         diag::err_attribute_webassembly_funcref);
+    Attr.setInvalid();
+    return;
+  }
+
+  // Add attribute
+  CurType =
+      State.getAttributedType(createSimpleAttr<WebAssemblyFuncrefAttr>(
+                                  State.getSema().Context, Attr),
+                              CurType, CurType);
+  
+  // Change address space to the funcref addrspace
+  Qualifiers Q = CurType.getQualifiers();
+  Q.setAddressSpace(LangAS::wasm_funcref);
+}
+
 /// Handle OpenCL Access Qualifier Attribute.
 static void HandleOpenCLAccessAttr(QualType &CurType, const ParsedAttr &Attr,
                                    Sema &S) {
@@ -8382,6 +8403,12 @@ static void processTypeAttrs(TypeProcessingState &state, QualType &type,
       HandleMatrixTypeAttr(type, attr, state.getSema());
       attr.setUsedAsTypeAttr();
       break;
+
+    case ParsedAttr::AT_WebAssemblyFuncref: {
+      HandleWebAssemblyFuncrefAttr(state, type, attr);
+      attr.setUsedAsTypeAttr();
+      break;
+    }
 
     MS_TYPE_ATTRS_CASELIST:
       if (!handleMSPointerTypeQualifierAttr(state, attr, type))

@@ -1737,6 +1737,8 @@ void TypePrinter::printAttributedAfter(const AttributedType *T,
     // AttributedType nodes for them.
     break;
 
+  case attr::WebAssemblyFuncref: OS << "__funcref"; break;
+
   case attr::LifetimeBound:
   case attr::TypeNonNull:
   case attr::TypeNullable:

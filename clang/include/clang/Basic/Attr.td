@@ -4036,3 +4036,9 @@ def NoRandomizeLayout : InheritableAttr {
   let LangOpts = [COnly];
 }
 def : MutualExclusions<[RandomizeLayout, NoRandomizeLayout]>;
+
+def WebAssemblyFuncref : TypeAttr, TargetSpecificAttr<TargetWebAssembly> {
+  let Spellings = [Clang<"__funcref">];
+  let Args = [];
+  let Documentation = [Undocumented];
+}

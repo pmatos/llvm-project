@@ -2640,7 +2640,14 @@ Sema::CheckBuiltinFunctionCall(FunctionDecl *FDecl, unsigned BuiltinID,
            diag::err_hip_invalid_args_builtin_mangled_name);
       return ExprError();
     }
+    break;
   }
+
+  case WebAssembly::BI__builtin_wasm_ref_null_func:
+    if (SemaBuiltinWasmRefNullFunc(TheCall))
+      return ExprError();
+    break;
+
   }
 
   // Since the target specific builtins for each arch overlap, only check those
@@ -6478,6 +6485,20 @@ static bool checkBuiltinArgument(Sema &S, CallExpr *E, unsigned ArgIndex) {
 
   E->setArg(ArgIndex, Arg.get());
   return false;
+}
+
+bool
+Sema::SemaBuiltinWasmRefNullFunc(CallExpr *TheCall) {
+  if (TheCall->getNumArgs() != 0)
+    return true;
+
+  // Set return type to a function pointer with the funcref attribute attached
+  QualType FnType = Context.getFunctionType(Context.VoidTy, {}, {});
+  QualType FnPtrType = Context.getPointerType(FnType);
+  
+  TheCall->setType(FnPtrType);
+
+  return false; 
 }
 
 /// We have a call to a function like __sync_fetch_and_add, which is an
