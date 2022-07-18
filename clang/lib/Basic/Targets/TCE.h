@@ -52,6 +52,7 @@ static const unsigned TCEOpenCLAddrSpaceMap[] = {
     0, // ptr64
     1, // wasm_var
     10,// wasm_externref
+    20,// wasm_funcref
 };
 
 class LLVM_LIBRARY_VISIBILITY TCETargetInfo : public TargetInfo {

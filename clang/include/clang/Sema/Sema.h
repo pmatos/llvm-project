@@ -13163,6 +13163,9 @@ private:
   ExprResult SemaBuiltinMatrixColumnMajorStore(CallExpr *TheCall,
                                                ExprResult CallResult);
 
+  // WebAssembly builtin handling
+  bool SemaBuiltinWasmRefNullFunc(CallExpr *TheCall);
+
 public:
   enum FormatStringType {
     FST_Scanf,

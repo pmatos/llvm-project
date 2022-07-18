@@ -2645,7 +2645,13 @@ Sema::CheckBuiltinFunctionCall(FunctionDecl *FDecl, unsigned BuiltinID,
            diag::err_hip_invalid_args_builtin_mangled_name);
       return ExprError();
     }
+    break;
   }
+
+  case WebAssembly::BI__builtin_wasm_ref_null_func:
+    if (SemaBuiltinWasmRefNullFunc(TheCall))
+      return ExprError();
+    break;
   }
 
   // Since the target specific builtins for each arch overlap, only check those
@@ -6528,6 +6534,32 @@ static bool checkBuiltinArgument(Sema &S, CallExpr *E, unsigned ArgIndex) {
     return true;
 
   E->setArg(ArgIndex, Arg.get());
+  return false;
+}
+
+bool Sema::SemaBuiltinWasmRefNullFunc(CallExpr *TheCall) {
+  if (TheCall->getNumArgs() != 0)
+    return true;
+
+  // The call we get looks like
+  // CallExpr
+  // `- ImplicitCastExpr
+  //   `- DeclRefExpr
+  //
+  // Therefore we need to change the types of the DeclRefExpr (stored in FDecl)
+  // and regenerate a straight up CallExpr on the modified FDecl.
+  // returning
+  // CallExpr
+  // `- FunctionDecl
+
+  // Prepare FDecl type
+  QualType Pointee = Context.getFunctionType(Context.VoidTy, {}, {});
+  QualType Type = Context.getPointerType(Pointee);
+  Pointee = Context.getAddrSpaceQualType(Pointee, LangAS::wasm_funcref);
+  Type = Context.getAttributedType(attr::WebAssemblyFuncref, Type,
+                                   Context.getPointerType(Pointee));
+  TheCall->setType(Type);
+
   return false;
 }
 

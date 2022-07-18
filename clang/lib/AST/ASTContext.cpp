@@ -951,6 +951,7 @@ static const LangASMap *getAddressSpaceMap(const TargetInfo &T,
         12, // ptr64
         1,  // wasm_var
         10, // wasm_externref,
+        20, // wasm_funcref
     };
     return &FakeAddrSpaceMap;
   } else {

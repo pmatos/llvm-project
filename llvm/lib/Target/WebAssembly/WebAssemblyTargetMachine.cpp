@@ -404,11 +404,17 @@ static void basicCheckForEHAndSjLj(TargetMachine *TM) {
 }
 
 //===----------------------------------------------------------------------===//
-// The following functions are called from lib/CodeGen/Passes.cpp to modify
-// the CodeGen pass sequence.
+// The following functions are called from lib/CodeGen/TargetPassConfig.cpp
+// to modify the CodeGen pass sequence.
 //===----------------------------------------------------------------------===//
 
 void WebAssemblyPassConfig::addIRPasses() {
+  // Run mem2reg to remove alloca references - needed for reference types
+  // FIXME: this should only be added when the subtarget has reference types
+  // enabled but the subtarget is dependent on the function being compiled to
+  // which we don't have access atm.
+  addPass(createPromoteMemoryToRegisterPass());
+
   // Add signatures to prototype-less function declarations
   addPass(createWebAssemblyAddMissingPrototypes());
 
