@@ -189,5 +189,9 @@ TARGET_BUILTIN(__builtin_wasm_relaxed_q15mulr_s_i16x8, "V8sV8sV8s", "nc", "relax
 TARGET_BUILTIN(__builtin_wasm_dot_i8x16_i7x16_s_i16x8, "V8sV16ScV16Sc", "nc", "relaxed-simd")
 TARGET_BUILTIN(__builtin_wasm_dot_i8x16_i7x16_add_s_i32x4, "V4iV16ScV16ScV4i", "nc", "relaxed-simd")
 
+// Reference Types builtins
+// Some builtins are polymorphic - see 't' as part of the third argument,
+// in which case the argument spec (second argument) is unused.
+TARGET_BUILTIN(__builtin_wasm_ref_null_extern, "e", "nc", "reference-types")
 #undef BUILTIN
 #undef TARGET_BUILTIN
