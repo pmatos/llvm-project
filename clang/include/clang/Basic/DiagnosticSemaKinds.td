@@ -11688,6 +11688,38 @@ def err_wasm_reference_reference : Error<
   "references to WebAssembly reference types are illegal">;
 def err_wasm_capture_reference : Error<
   "cannot capture WebAssembly reference">;
+def err_wasm_table_pointer : Error<
+  "pointers to WebAssembly tables are illegal">;
+def err_wasm_table_reference : Error<
+  "references to WebAssembly tables are illegal">;
 def err_wasm_addrof_reference : Error<
   "cannot take address of WebAssembly reference">;
+def err_wasm_addrof_table : Error<
+  "cannot take address of WebAssembly table">;
+def err_typecheck_wasm_table_must_have_zero_length : Error<
+  "only zero-length WebAssembly tables are currently supported">;
+def err_wasm_table_in_function : Error<
+  "WebAssembly table cannot be declared within a function">;
+def err_wasm_table_as_function_argument : Error<
+  "cannot use WebAssembly table as a function argument">;
+def err_wasm_table_invalid_uett_operand : Error<
+  "invalid application of '%0' to WebAssembly table">;
+def err_wasm_cast_table : Error<
+  "cannot cast WebAssembly table">;
+def err_wasm_table_conditional_expression : Error<
+  "cannot use WebAssembly tables as the 2nd or 3rd operands of a conditional expression">;
+def err_wasm_table_assignment : Error<
+  "cannot assign WebAssembly table to a variable">;
+def err_wasm_table_return : Error<
+  "cannot return a WebAssembly table">;
+def err_wasm_table_throw : Error<
+  "cannot throw a WebAssembly table">;
+def err_wasm_table_catch : Error<
+  "cannot catch WebAssembly table">;
+def err_wasm_table_exception_spec : Error<
+  "WebAssembly table not allowed in exception sepcification">;
+def err_wasm_table_must_be_static : Error<
+  "WebAssembly table must be static">;
+def err_wasm_multidimensional_ref_array : Error<
+  "multi-dimensional arrays of WebAssembly references are illegal">;
 } // end of sema component.

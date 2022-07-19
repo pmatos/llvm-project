@@ -118,6 +118,7 @@ ExprResult Sema::ActOnNoexceptSpec(Expr *NoexceptExpr,
 /// \param[in,out] T  The exception type. This will be decayed to a pointer type
 ///                   when the input is an array or a function type.
 bool Sema::CheckSpecifiedExceptionType(QualType &T, SourceRange Range) {
+
   // C++11 [except.spec]p2:
   //   A type cv T, "array of T", or "function returning T" denoted
   //   in an exception-specification is adjusted to type T, "pointer to T", or
@@ -176,6 +177,12 @@ bool Sema::CheckSpecifiedExceptionType(QualType &T, SourceRange Range) {
   if (PointeeT->isSizelessType() && Kind != 1) {
     Diag(Range.getBegin(), diag::err_sizeless_in_exception_spec)
         << (Kind == 2 ? 1 : 0) << PointeeT << Range;
+    return true;
+  }
+
+  // WebAssembly tables can't be used in exception specifications.
+  if (PointeeT->isWebAssemblyReferenceType()) {
+    Diag(Range.getBegin(), diag::err_wasm_table_exception_spec);
     return true;
   }
 

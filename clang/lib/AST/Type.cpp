@@ -2335,6 +2335,12 @@ bool Type::isWebAssemblyExternrefType() const {
 
 bool Type::isSizelessType() const { return isSizelessBuiltinType(); }
 
+bool Type::isWebAssemblyTableType() const {
+  return ((isArrayType() &&
+           getArrayElementTypeNoTypeQual()->isWebAssemblyReferenceType()) ||
+          (isPointerType() && getPointeeType()->isWebAssemblyReferenceType()));
+}
+
 bool Type::isVLSTBuiltinType() const {
   if (const BuiltinType *BT = getAs<BuiltinType>()) {
     switch (BT->getKind()) {
