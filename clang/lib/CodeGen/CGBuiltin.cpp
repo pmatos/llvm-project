@@ -18837,6 +18837,60 @@ Value *CodeGenFunction::EmitWebAssemblyBuiltinExpr(unsigned BuiltinID,
         CGM.getIntrinsic(Intrinsic::wasm_dot_i8x16_i7x16_add_signed);
     return Builder.CreateCall(Callee, {LHS, RHS, Acc});
   }
+  case WebAssembly::BI__builtin_wasm_table_size: {
+    assert(E->getArg(0)->getType()->isArrayType());
+    Value *Value =
+        EmitCastToVoidPtr(EmitArrayToPointerDecay(E->getArg(0)).getPointer());
+    Function *Callee = CGM.getIntrinsic(Intrinsic::wasm_table_size);
+    return Builder.CreateCall(Callee, Value);
+  }
+  case WebAssembly::BI__builtin_wasm_table_grow: {
+    assert(E->getArg(0)->getType()->isArrayType());
+    Value *Table =
+        EmitCastToVoidPtr(EmitArrayToPointerDecay(E->getArg(0)).getPointer());
+    Value *Val = EmitScalarExpr(E->getArg(1));
+    Value *NElems = EmitScalarExpr(E->getArg(2));
+
+    Function *Callee;
+    if (E->getArg(1)->getType()->isWebAssemblyExternrefType())
+      Callee = CGM.getIntrinsic(Intrinsic::wasm_table_grow_externref);
+    else
+      llvm_unreachable(
+          "Unexpected reference type for __builtin_wasm_table_grow");
+
+    return Builder.CreateCall(Callee, {Table, Val, NElems});
+  }
+  case WebAssembly::BI__builtin_wasm_table_fill: {
+    assert(E->getArg(0)->getType()->isArrayType());
+    Value *Table =
+        EmitCastToVoidPtr(EmitArrayToPointerDecay(E->getArg(0)).getPointer());
+    Value *Index = EmitScalarExpr(E->getArg(1));
+    Value *Val = EmitScalarExpr(E->getArg(2));
+    Value *NElems = EmitScalarExpr(E->getArg(3));
+
+    Function *Callee;
+    if (E->getArg(2)->getType()->isWebAssemblyExternrefType())
+      Callee = CGM.getIntrinsic(Intrinsic::wasm_table_fill_externref);
+    else
+      llvm_unreachable(
+          "Unexpected reference type for __builtin_wasm_table_fill");
+
+    return Builder.CreateCall(Callee, {Table, Index, Val, NElems});
+  }
+  case WebAssembly::BI__builtin_wasm_table_copy: {
+    assert(E->getArg(0)->getType()->isArrayType());
+    Value *TableX =
+        EmitCastToVoidPtr(EmitArrayToPointerDecay(E->getArg(0)).getPointer());
+    Value *TableY =
+        EmitCastToVoidPtr(EmitArrayToPointerDecay(E->getArg(1)).getPointer());
+    Value *DstIdx = EmitScalarExpr(E->getArg(2));
+    Value *SrcIdx = EmitScalarExpr(E->getArg(3));
+    Value *NElems = EmitScalarExpr(E->getArg(4));
+
+    Function *Callee = CGM.getIntrinsic(Intrinsic::wasm_table_copy);
+
+    return Builder.CreateCall(Callee, {TableX, TableY, SrcIdx, DstIdx, NElems});
+  }
   default:
     return nullptr;
   }

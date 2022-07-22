@@ -13167,6 +13167,10 @@ private:
 
   // WebAssembly builtin handling
   bool SemaBuiltinWasmRefNullFunc(CallExpr *TheCall);
+  bool SemaBuiltinWasmTableSize(CallExpr *TheCall);
+  bool SemaBuiltinWasmTableGrow(CallExpr *TheCall);
+  bool SemaBuiltinWasmTableFill(CallExpr *TheCall);
+  bool SemaBuiltinWasmTableCopy(CallExpr *TheCall);
 
 public:
   enum FormatStringType {
