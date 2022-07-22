@@ -7328,6 +7328,8 @@ def err_attribute_arm_builtin_alias : Error<
   "'__clang_arm_builtin_alias' attribute can only be applied to an ARM builtin">;
 def err_attribute_arm_mve_polymorphism : Error<
   "'__clang_arm_mve_strict_polymorphism' attribute can only be applied to an MVE/NEON vector type">;
+def err_attribute_webassembly_funcref : Error<
+  "'__clang_webassembly_funcref' attribute can only be applied to function pointer types">;
 
 def warn_setter_getter_impl_required : Warning<
   "property %0 requires method %1 to be defined - "

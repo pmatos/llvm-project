@@ -1981,6 +1981,9 @@ bool Sema::CheckTSBuiltinFunctionCall(const TargetInfo &TI, unsigned BuiltinID,
   case llvm::Triple::riscv32:
   case llvm::Triple::riscv64:
     return CheckRISCVBuiltinFunctionCall(TI, BuiltinID, TheCall);
+  case llvm::Triple::wasm32:
+  case llvm::Triple::wasm64:
+    return CheckWebAssemblyBuiltinFunctionCall(TI, BuiltinID, TheCall);
   }
 }
 
@@ -4514,6 +4517,17 @@ bool Sema::CheckSystemZBuiltinFunctionCall(unsigned BuiltinID,
   return SemaBuiltinConstantArgRange(TheCall, i, l, u);
 }
 
+bool Sema::CheckWebAssemblyBuiltinFunctionCall(const TargetInfo &TI,
+                                               unsigned BuiltinID,
+                                               CallExpr *TheCall) {
+  switch (BuiltinID) {
+  case WebAssembly::BI__builtin_wasm_ref_null_func:
+    return (SemaBuiltinWasmRefNullFunc(TheCall));
+  }
+
+  return false;
+}
+
 /// SemaBuiltinCpuSupports - Handle __builtin_cpu_supports(char *).
 /// This checks that the target supports __builtin_cpu_supports and
 /// that the string argument is constant and valid.
@@ -6528,6 +6542,32 @@ static bool checkBuiltinArgument(Sema &S, CallExpr *E, unsigned ArgIndex) {
     return true;
 
   E->setArg(ArgIndex, Arg.get());
+  return false;
+}
+
+bool Sema::SemaBuiltinWasmRefNullFunc(CallExpr *TheCall) {
+  if (TheCall->getNumArgs() != 0)
+    return true;
+
+  // The call we get looks like
+  // CallExpr
+  // `- ImplicitCastExpr
+  //   `- DeclRefExpr
+  //
+  // Therefore we need to change the types of the DeclRefExpr (stored in FDecl)
+  // and regenerate a straight up CallExpr on the modified FDecl.
+  // returning
+  // CallExpr
+  // `- FunctionDecl
+
+  // Prepare FDecl type
+  QualType Pointee = Context.getFunctionType(Context.VoidTy, {}, {});
+  QualType Type = Context.getPointerType(Pointee);
+  Pointee = Context.getAddrSpaceQualType(Pointee, LangAS::wasm_funcref);
+  Type = Context.getAttributedType(attr::WebAssemblyFuncref, Type,
+                                   Context.getPointerType(Pointee));
+  TheCall->setType(Type);
+
   return false;
 }
 
