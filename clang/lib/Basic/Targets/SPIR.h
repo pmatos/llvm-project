@@ -42,7 +42,9 @@ static const unsigned SPIRDefIsPrivMap[] = {
     0, // sycl_private
     0, // ptr32_sptr
     0, // ptr32_uptr
-    0  // ptr64
+    0, // ptr64
+    1, // wasm_var
+    10,// wasm_externref
 };
 
 // Used by both the SPIR and SPIR-V targets.
@@ -71,7 +73,9 @@ static const unsigned SPIRDefIsGenMap[] = {
     0, // sycl_private
     0, // ptr32_sptr
     0, // ptr32_uptr
-    0  // ptr64
+    0, // ptr64
+    1, // wasm_var
+    10,// wasm_externref
 };
 
 // Base class for SPIR and SPIR-V target info.
