@@ -2895,6 +2895,13 @@ void CastOperation::CheckCStyleCast() {
     return;
   QualType SrcType = SrcExpr.get()->getType();
 
+  if (SrcType->isWebAssemblyTableType()) {
+    Self.Diag(OpRange.getBegin(), diag::err_wasm_cast_table)
+        << SrcExpr.get()->getSourceRange();
+    SrcExpr = ExprError();
+    return;
+  }
+
   assert(!SrcType->isPlaceholderType());
 
   checkAddressSpaceCast(SrcType, DestType);

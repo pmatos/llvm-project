@@ -1972,6 +1972,11 @@ public:
   bool isWebAssemblyReferenceType() const;
   bool isWebAssemblyExternrefType() const;
 
+  /// Returns true if this is a WebAssembly table type: either an array of
+  /// reference types, or a pointer to a reference type (which can only be
+  /// created by array to pointer decay).
+  bool isWebAssemblyTableType() const;
+
   /// Determines if this is a sizeless type supported by the
   /// 'arm_sve_vector_bits' type attribute, which can be applied to a single
   /// SVE vector or predicate, excluding tuple types such as svint32x4_t.

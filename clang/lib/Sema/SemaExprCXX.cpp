@@ -989,6 +989,13 @@ bool Sema::CheckCXXThrowOperand(SourceLocation ThrowLoc,
       return true;
   }
 
+  // Cannot throw WebAssembly tables (throwing WebAssembly references is
+  // caught earlier in this function).
+  if (Ty->isWebAssemblyReferenceType()) {
+    Diag(ThrowLoc, diag::err_wasm_table_throw) << E->getSourceRange();
+    return true;
+  }
+
   // If the exception has class type, we need additional handling.
   CXXRecordDecl *RD = Ty->getAsCXXRecordDecl();
   if (!RD)

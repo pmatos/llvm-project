@@ -2333,6 +2333,12 @@ bool Type::isWebAssemblyExternrefType() const {
   return false;
 }
 
+bool Type::isWebAssemblyTableType() const {
+  return ((isArrayType() &&
+           getArrayElementTypeNoTypeQual()->isWebAssemblyReferenceType()) ||
+          (isPointerType() && getPointeeType()->isWebAssemblyReferenceType()));
+}
+
 bool Type::isSizelessType() const { return isSizelessBuiltinType(); }
 
 bool Type::isVLSTBuiltinType() const {
