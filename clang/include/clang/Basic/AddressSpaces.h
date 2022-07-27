@@ -56,6 +56,8 @@ enum class LangAS : unsigned {
   ptr32_uptr,
   ptr64,
 
+  wasm_var,
+  wasm_externref,
   // This denotes the count of language-specific address spaces and also
   // the offset added to the target-specific address spaces, which are usually
   // specified by address space attributes __attribute__(address_space(n))).

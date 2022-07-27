@@ -11650,4 +11650,14 @@ def err_non_designated_init_used : Error<
   "a randomized struct can only be initialized with a designated initializer">;
 def err_cast_from_randomized_struct : Error<
   "casting from randomized structure pointer type %0 to %1">;
+
+// WebAssembly reference type and table diagnostics
+def err_wasm_reference_pointer : Error<
+  "pointers to WebAssembly reference types are illegal">;
+def err_wasm_reference_reference : Error<
+  "references to WebAssembly reference types are illegal">;
+def err_wasm_capture_reference : Error<
+  "cannot capture WebAssembly reference">;
+def err_wasm_addrof_reference : Error<
+  "cannot take address of WebAssembly reference">;
 } // end of sema component.

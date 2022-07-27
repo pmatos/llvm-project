@@ -71,6 +71,13 @@ module Clang_Basic {
   textual header "Basic/RISCVVTypes.def"
   textual header "Basic/Sanitizers.def"
   textual header "Basic/TargetCXXABI.def"
+<<<<<<< HEAD
+||||||| parent of 8be04e46dbeb ([WebAssembly] Initial support for reference type externref in clang)
+  textual header "Basic/TokenKinds.def"
+=======
+  textual header "Basic/TokenKinds.def"
+  textual header "Basic/WebAssemblyReferenceTypes.def"
+>>>>>>> 8be04e46dbeb ([WebAssembly] Initial support for reference type externref in clang)
 
   module * { export * }
 }
