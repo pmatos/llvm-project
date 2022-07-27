@@ -1971,6 +1971,7 @@ public:
   /// Check if this is a WebAssembly Reference Type.
   bool isWebAssemblyReferenceType() const;
   bool isWebAssemblyExternrefType() const;
+
   /// Determines if this is a sizeless type supported by the
   /// 'arm_sve_vector_bits' type attribute, which can be applied to a single
   /// SVE vector or predicate, excluding tuple types such as svint32x4_t.
@@ -4810,6 +4811,8 @@ public:
   bool isQualifier() const;
 
   bool isMSTypeSpec() const;
+
+  bool isWebAssemblyFuncrefSpec() const;
 
   bool isCallingConv() const;
 
