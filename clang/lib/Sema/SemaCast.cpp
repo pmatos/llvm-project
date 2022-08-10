@@ -2246,6 +2246,9 @@ static TryCastResult TryReinterpretCast(Sema &Self, ExprResult &SrcExpr,
     case OK_MatrixComponent:
       inappropriate = "matrix element";
       break;
+    case OK_TableComponent:
+      inappropriate = "table element";
+      break;
     case OK_ObjCProperty:    inappropriate = "property expression"; break;
     case OK_ObjCSubscript:   inappropriate = "container subscripting expression";
                              break;

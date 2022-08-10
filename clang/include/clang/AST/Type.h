@@ -2122,6 +2122,7 @@ public:
   bool isVectorType() const;                    // GCC vector type.
   bool isExtVectorType() const;                 // Extended vector type.
   bool isExtVectorBoolType() const;             // Extended vector type with bool element.
+  bool isWasmTableType() const;                 // WASM table type.
   bool isMatrixType() const;                    // Matrix type.
   bool isConstantMatrixType() const;            // Constant matrix type.
   bool isDependentAddressSpaceType() const;     // value-dependent address space qualifier
@@ -3493,6 +3494,43 @@ public:
   static bool classof(const Type *T) {
     return T->getTypeClass() == ExtVector;
   }
+};
+
+// Represents a WebAssembly Table type.
+class WasmTableType : public Type, public llvm::FoldingSetNode {
+  protected:
+    friend class ASTContext; // ASTContext creates these.
+
+    /// The element type of the table.
+    QualType ElementType;
+
+    WasmTableType(QualType ElementTy, QualType CanonElementTy);
+
+  public:
+    /// Returns the type of the elements being stored in the table
+    QualType getElementType() const { return ElementType; }
+
+    /// Valid elements are WebAssembly Reference Types
+    static bool isValidElementType(QualType T) {
+      return T->isWebAssemblyReferenceType();
+    }
+
+    bool isSugared() const { return false; }
+    QualType desugar() const { return QualType(this, 0); }
+
+    void Profile(llvm::FoldingSetNodeID &ID) {
+      Profile(ID, getElementType(), getTypeClass());
+    }
+
+    static void Profile(llvm::FoldingSetNodeID &ID, QualType ElementType,
+                        TypeClass TypeClass) {
+      ID.AddPointer(ElementType.getAsOpaquePtr());
+      ID.AddInteger(TypeClass);
+    }
+
+    static bool classof(const Type *T) {
+      return T->getTypeClass() == WasmTable;
+    }
 };
 
 /// Represents a matrix type, as defined in the Matrix Types clang extensions.
@@ -6944,6 +6982,10 @@ inline bool Type::isExtVectorBoolType() const {
 
 inline bool Type::isMatrixType() const {
   return isa<MatrixType>(CanonicalType);
+}
+
+inline bool Type::isWasmTableType() const {
+  return isa<WasmTableType>(CanonicalType);
 }
 
 inline bool Type::isConstantMatrixType() const {

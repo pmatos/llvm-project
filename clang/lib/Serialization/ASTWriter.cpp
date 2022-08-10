@@ -369,6 +369,10 @@ void TypeLocWriter::VisitExtVectorTypeLoc(ExtVectorTypeLoc TL) {
   addSourceLocation(TL.getNameLoc());
 }
 
+void TypeLocWriter::VisitWasmTableTypeLoc(WasmTableTypeLoc TL) {
+  addSourceLocation(TL.getAttrNameLoc());
+}
+
 void TypeLocWriter::VisitConstantMatrixTypeLoc(ConstantMatrixTypeLoc TL) {
   addSourceLocation(TL.getAttrNameLoc());
   SourceRange range = TL.getAttrOperandParensRange();

@@ -1033,6 +1033,9 @@ public:
     /// Non-const lvalue reference binding to a matrix element.
     FK_NonConstLValueReferenceBindingToMatrixElement,
 
+    /// Non-const lvalue reference binding to a table element.
+    FK_NonConstLValueReferenceBindingToTableElement,
+
     /// Non-const lvalue reference binding to an lvalue of unrelated
     /// type.
     FK_NonConstLValueReferenceBindingToUnrelated,

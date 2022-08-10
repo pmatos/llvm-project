@@ -1856,6 +1856,27 @@ public:
   QualType getInnerType() const { return this->getTypePtr()->getElementType(); }
 };
 
+struct WasmTableTypeLocInfo {
+  SourceLocation AttrLoc;
+};
+
+class WasmTableTypeLoc : public ConcreteTypeLoc<UnqualTypeLoc, WasmTableTypeLoc,
+                                                WasmTableType, WasmTableTypeLocInfo> {
+public:
+  /// The location of the attribute name
+  SourceLocation getAttrNameLoc() const { return getLocalData()->AttrLoc; }
+  void setAttrNameLoc(SourceLocation loc) { getLocalData()->AttrLoc = loc; }
+
+  SourceRange getLocalSourceRange() const {
+    SourceRange range(getAttrNameLoc());
+    return range;
+  }
+
+  void initializeLocal(ASTContext &Context, SourceLocation loc) {
+    setAttrNameLoc(loc);
+  }
+};
+
 struct MatrixTypeLocInfo {
   SourceLocation AttrLoc;
   SourceRange OperandParens;

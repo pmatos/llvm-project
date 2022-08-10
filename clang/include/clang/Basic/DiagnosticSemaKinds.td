@@ -2168,6 +2168,8 @@ def err_reference_bind_to_vector_element : Error<
   "%select{non-const|volatile}0 reference cannot bind to vector element">;
 def err_reference_bind_to_matrix_element : Error<
   "%select{non-const|volatile}0 reference cannot bind to matrix element">;
+def err_reference_bind_to_table_element : Error<
+  "%select{non-const|volatile}0 reference cannot bind to table element">;
 def err_reference_var_requires_init : Error<
   "declaration of reference variable %0 requires an initializer">;
 def err_reference_without_init : Error<
@@ -3022,6 +3024,7 @@ def err_attribute_too_few_arguments : Error<
   "%0 attribute takes at least %1 argument%s1">;
 def err_attribute_invalid_vector_type : Error<"invalid vector element type %0">;
 def err_attribute_invalid_matrix_type : Error<"invalid matrix element type %0">;
+def err_attribute_invalid_wasm_table_type : Error<"invalid table element type %0">;
 def err_attribute_bad_neon_vector_size : Error<
   "Neon vector size must be 64 or 128 bits">;
 def err_attribute_invalid_sve_type : Error<
@@ -6888,7 +6891,7 @@ def err_typecheck_sclass_func : Error<"illegal storage class on function">;
 def err_static_block_func : Error<
   "function declared in block scope cannot have 'static' storage class">;
 def err_typecheck_address_of : Error<"address of %select{bit-field"
-  "|vector element|property expression|register variable|matrix element}0 requested">;
+  "|vector element|property expression|register variable|matrix element|table element}0 requested">;
 def ext_typecheck_addrof_void : Extension<
   "ISO C forbids taking the address of an expression of type 'void'">;
 def err_unqualified_pointer_member_function : Error<
@@ -11548,8 +11551,12 @@ def err_builtin_invalid_arg_type: Error <
   "floating point type|"
   "vector of integers}1 (was %2)">;
 
+def err_wasm_table_disabled: Error<
+  "WebAssembly table support is disabled. Pass -mreference-types to enable it">;
 def err_builtin_matrix_disabled: Error<
   "matrix types extension is disabled. Pass -fenable-matrix to enable it">;
+def err_table_index_not_integer: Error<
+  "table index must be an integer">;
 def err_matrix_index_not_integer: Error<
   "matrix %select{row|column}0 index is not an integer">;
 def err_matrix_index_outside_range: Error<

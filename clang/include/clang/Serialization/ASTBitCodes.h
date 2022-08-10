@@ -1640,6 +1640,9 @@ enum StmtCode {
   /// An MatrixSubscriptExpr record.
   EXPR_MATRIX_SUBSCRIPT,
 
+  /// A TableSubscriptExpr record.
+  EXPR_TABLE_SUBSCRIPT,
+  
   /// A CallExpr record.
   EXPR_CALL,
 

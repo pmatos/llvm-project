@@ -176,6 +176,9 @@ void TextNodeDumper::Visit(const Stmt *Node) {
       case OK_MatrixComponent:
         OS << " matrixcomponent";
         break;
+      case OK_TableComponent:
+        OS << " tablecomponent";
+        break;
       }
     }
   }

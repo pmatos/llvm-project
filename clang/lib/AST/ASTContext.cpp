@@ -2027,6 +2027,14 @@ TypeInfo ASTContext::getTypeInfoImpl(const Type *T) const {
     break;
   }
 
+  case Type::WasmTable: {
+    const auto *MT = cast<WasmTableType>(T);
+    TypeInfo ElementInfo = getTypeInfo(MT->getElementType());
+    Width = ElementInfo.Width;
+    Align = ElementInfo.Align;
+    break;
+  }
+
   case Type::ConstantMatrix: {
     const auto *MT = cast<ConstantMatrixType>(T);
     TypeInfo ElementInfo = getTypeInfo(MT->getElementType());
@@ -3607,6 +3615,7 @@ QualType ASTContext::getVariableArrayDecayedType(QualType type) const {
   case Type::DependentVector:
   case Type::ExtVector:
   case Type::DependentSizedExtVector:
+  case Type::WasmTable:
   case Type::ConstantMatrix:
   case Type::DependentSizedMatrix:
   case Type::DependentAddressSpace:
@@ -4177,6 +4186,33 @@ ASTContext::getDependentSizedExtVectorType(QualType vecType,
     }
   }
 
+  Types.push_back(New);
+  return QualType(New, 0);
+}
+
+QualType ASTContext::getWasmTableType(QualType ElementTy) const {
+  llvm::FoldingSetNodeID ID;
+  WasmTableType::Profile(ID, ElementTy, Type::WasmTable);
+
+  assert(WasmTableType::isValidElementType(ElementTy) &&
+         "need a valid element type");
+  void *InsertPos = nullptr;
+  if (WasmTableType *WTTP = WasmTableTypes.FindNodeOrInsertPos(ID, InsertPos))
+    return QualType(WTTP, 0);
+
+  QualType Canonical;
+  if (!ElementTy.isCanonical()) {
+    Canonical =
+        getWasmTableType(getCanonicalType(ElementTy));
+
+    WasmTableType *NewIP = WasmTableTypes.FindNodeOrInsertPos(ID, InsertPos);
+    assert(!NewIP && "Table type shouldn't already exist in the map");
+    (void)NewIP;
+  }
+
+  auto *New = new (*this, TypeAlignment)
+      WasmTableType(ElementTy, Canonical);
+  WasmTableTypes.InsertNode(New, InsertPos);
   Types.push_back(New);
   return QualType(New, 0);
 }
@@ -8431,6 +8467,11 @@ void ASTContext::getObjCEncodingForTypeImpl(QualType T, std::string &S,
       *NotEncodedT = T;
     return;
 
+  case Type::WasmTable:
+    if (NotEncodedT)
+      *NotEncodedT = T;
+    return;
+
   case Type::ConstantMatrix:
     if (NotEncodedT)
       *NotEncodedT = T;
@@ -9317,6 +9358,14 @@ static bool areCompatVectorTypes(const VectorType *LHS,
   assert(LHS->isCanonicalUnqualified() && RHS->isCanonicalUnqualified());
   return LHS->getElementType() == RHS->getElementType() &&
          LHS->getNumElements() == RHS->getNumElements();
+}
+
+/// areCompatWasmTableTypes - Return true if the two specified table types are
+/// compatible.
+static bool areCompatWasmTableTypes(const WasmTableType *LHS,
+                                    const WasmTableType *RHS) {
+  assert(LHS->isCanonicalUnqualified() && RHS->isCanonicalUnqualified());
+  return LHS->getElementType() == RHS->getElementType();
 }
 
 /// areCompatMatrixTypes - Return true if the two specified matrix types are
@@ -10637,6 +10686,11 @@ QualType ASTContext::mergeTypes(QualType LHS, QualType RHS,
     // FIXME: The merged type should be an ExtVector!
     if (areCompatVectorTypes(LHSCan->castAs<VectorType>(),
                              RHSCan->castAs<VectorType>()))
+      return LHS;
+    return {};
+  case Type::WasmTable:
+    if (areCompatWasmTableTypes(LHSCan->castAs<WasmTableType>(),
+                                RHSCan->castAs<WasmTableType>()))
       return LHS;
     return {};
   case Type::ConstantMatrix:

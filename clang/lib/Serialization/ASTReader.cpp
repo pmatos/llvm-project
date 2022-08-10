@@ -6609,6 +6609,10 @@ void TypeLocReader::VisitExtVectorTypeLoc(ExtVectorTypeLoc TL) {
   TL.setNameLoc(readSourceLocation());
 }
 
+void TypeLocReader::VisitWasmTableTypeLoc(WasmTableTypeLoc TL) {
+  TL.setAttrNameLoc(readSourceLocation());
+}
+
 void TypeLocReader::VisitConstantMatrixTypeLoc(ConstantMatrixTypeLoc TL) {
   TL.setAttrNameLoc(readSourceLocation());
   TL.setAttrOperandParensRange(readSourceRange());

@@ -36,6 +36,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/MDBuilder.h"
 #include "llvm/IR/MatrixBuilder.h"
+#include "llvm/Passes/OptimizationLevel.h"
 #include "llvm/Support/ConvertUTF.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/Path.h"
@@ -151,6 +152,9 @@ Address CodeGenFunction::CreateMemTemp(QualType Ty, CharUnits Align,
     Result = Address(
         Builder.CreateBitCast(Result.getPointer(), VectorTy->getPointerTo()),
         VectorTy, Result.getAlignment());
+  }
+  else if (Ty->isWasmTableType()) {
+    assert("wasm table type is not supported yet");
   }
   return Result;
 }
@@ -1420,6 +1424,8 @@ LValue CodeGenFunction::EmitLValue(const Expr *E) {
     return EmitArraySubscriptExpr(cast<ArraySubscriptExpr>(E));
   case Expr::MatrixSubscriptExprClass:
     return EmitMatrixSubscriptExpr(cast<MatrixSubscriptExpr>(E));
+  case Expr::TableSubscriptExprClass:
+    return EmitTableSubscriptExpr(cast<TableSubscriptExpr>(E));
   case Expr::OMPArraySectionExprClass:
     return EmitOMPArraySectionExpr(cast<OMPArraySectionExpr>(E));
   case Expr::ExtVectorElementExprClass:
@@ -1832,6 +1838,15 @@ llvm::Value *CodeGenFunction::EmitFromMemory(llvm::Value *Value, QualType Ty) {
   return Value;
 }
 
+static Address MaybeConvertTableAddress(Address Addr, CodeGenFunction &CGF, bool IsVector = true) {
+  assert("Table address cannot yet be converted");
+  return Addr;
+}
+
+static void EmitStoreOfTableScalar(llvm::Value *value, LValue lvalue, bool isInit, CodeGenFunction &CGF) {
+  assert("Table scalar cannot yet be stored");
+}
+
 // Convert the pointer of \p Addr to a pointer to a vector (the value type of
 // MatrixType), if it points to a array (the memory type of MatrixType).
 static Address MaybeConvertMatrixAddress(Address Addr, CodeGenFunction &CGF,
@@ -1928,10 +1943,20 @@ void CodeGenFunction::EmitStoreOfScalar(llvm::Value *value, LValue lvalue,
     EmitStoreOfMatrixScalar(value, lvalue, isInit, *this);
     return;
   }
+  else if(lvalue.getType()->isWasmTableType()) {
+    EmitStoreOfTableScalar(value, lvalue, isInit, *this);
+    return;
+  }
 
   EmitStoreOfScalar(value, lvalue.getAddress(*this), lvalue.isVolatile(),
                     lvalue.getType(), lvalue.getBaseInfo(),
                     lvalue.getTBAAInfo(), isInit, lvalue.isNontemporal());
+}
+
+static RValue EmitLoadOfWasmTableLValue(LValue LV, SourceLocation Loc,
+                                    CodeGenFunction &CGF) {
+  assert("Table lvalue cannot yet be loaded");
+  return RValue();
 }
 
 // Emit a load of a LValue of matrix type. This may require casting the pointer
@@ -1971,6 +1996,8 @@ RValue CodeGenFunction::EmitLoadOfLValue(LValue LV, SourceLocation Loc) {
 
     if (LV.getType()->isConstantMatrixType())
       return EmitLoadOfMatrixLValue(LV, Loc, *this);
+    else if(LV.getType()->isWasmTableType())
+      return EmitLoadOfWasmTableLValue(LV, Loc, *this);
 
     // Everything needs a load.
     return RValue::get(EmitLoadOfScalar(LV, Loc));
@@ -2000,9 +2027,22 @@ RValue CodeGenFunction::EmitLoadOfLValue(LValue LV, SourceLocation Loc) {
       llvm::MatrixBuilder MB(Builder);
       MB.CreateIndexAssumption(Idx, MatTy->getNumElementsFlattened());
     }
+
     llvm::LoadInst *Load =
         Builder.CreateLoad(LV.getMatrixAddress(), LV.isVolatileQualified());
     return RValue::get(Builder.CreateExtractElement(Load, Idx, "matrixext"));
+  }
+
+  if(LV.isTableElt()) {
+    llvm::Value *Idx = LV.getTableIdx();
+    if (CGM.getCodeGenOpts().OptimizationLevel > 0) {
+      const auto *const TabTy = LV.getType()->castAs<WasmTableType>();
+      (void) TabTy;
+      // need to emit something here!!!
+      //llvm::TableBuilder TB(Builder);
+      // FIXME: unsure what this CreateIndexAssumption does exactly
+      // MB.CreateIndexAssumption(Idx, TabTy->getNumElementsFlattened());
+    }
   }
 
   assert(LV.isBitField() && "Unknown LValue type!");
@@ -2162,6 +2202,24 @@ void CodeGenFunction::EmitStoreThroughLValue(RValue Src, LValue Dst,
           Builder.CreateInsertElement(Load, Src.getScalarVal(), Idx, "matins");
       Builder.CreateStore(Vec, Dst.getMatrixAddress(),
                           Dst.isVolatileQualified());
+      return;
+    }
+
+    if (Dst.isTableElt()) {
+      llvm::Value *Idx = Dst.getTableIdx();
+      if (CGM.getCodeGenOpts().OptimizationLevel > 0) {
+        const auto *const TabTy = Dst.getType()->castAs<WasmTableType>();
+        llvm::TableBuilder MB(Builder);
+        // FIXME again unsure what this does exactly
+        // MB.CreateIndexAssumption(Idx, MatTy->getNumElementsFlattened());
+      }
+      // FIXME at this point we should generate an LLVM table store intrinsic
+      assert (false);
+      //llvm::Instruction *Load = Builder.CreateLoad(Dst.getTableAddress());
+      //llvm::Value *Vec =
+      //    Builder.CreateInsertElement(Load, Src.getScalarVal(), Idx, "matins");
+      //Builder.CreateStore(Vec, Dst.getMatrixAddress(),
+      //                    Dst.isVolatileQualified());
       return;
     }
 
@@ -3974,6 +4032,21 @@ LValue CodeGenFunction::EmitMatrixSubscriptExpr(const MatrixSubscriptExpr *E) {
       MaybeConvertMatrixAddress(Base.getAddress(*this), *this), FinalIdx,
       E->getBase()->getType(), Base.getBaseInfo(), TBAAAccessInfo());
 }
+
+LValue CodeGenFunction::EmitTableSubscriptExpr(const TableSubscriptExpr *E) {
+  // FIXME unsure how to emit this tbh
+  LValue Base = EmitLValue(E->getBase());
+  llvm::Value *Idx = EmitScalarExpr(E->getIdx());
+  llvm::Value *NumRows = Builder.getIntN(
+      RowIdx->getType()->getScalarSizeInBits(),
+      E->getBase()->getType()->castAs<ConstantMatrixType>()->getNumRows());
+  llvm::Value *FinalIdx =
+      Builder.CreateAdd(Builder.CreateMul(ColIdx, NumRows), RowIdx);
+  return LValue::MakeTableElt(
+      MaybeConvertMatrixAddress(Base.getAddress(*this), *this), FinalIdx,
+      E->getBase()->getType(), Base.getBaseInfo(), TBAAAccessInfo());
+}
+
 
 static Address emitOMPArraySectionBase(CodeGenFunction &CGF, const Expr *Base,
                                        LValueBaseInfo &BaseInfo,

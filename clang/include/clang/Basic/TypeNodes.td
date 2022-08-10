@@ -69,6 +69,7 @@ def DependentAddressSpaceType : TypeNode<Type>, AlwaysDependent;
 def VectorType : TypeNode<Type>;
 def DependentVectorType : TypeNode<Type>, AlwaysDependent;
 def ExtVectorType : TypeNode<VectorType>;
+def WasmTableType : TypeNode<Type>;
 def MatrixType : TypeNode<Type, 1>;
 def ConstantMatrixType : TypeNode<MatrixType>;
 def DependentSizedMatrixType : TypeNode<MatrixType>, AlwaysDependent;
