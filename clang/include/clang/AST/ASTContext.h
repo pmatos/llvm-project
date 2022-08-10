@@ -1536,6 +1536,10 @@ public:
                                           Expr *SizeExpr,
                                           SourceLocation AttrLoc) const;
 
+  /// Return the unique reference to the Wasm table type of the specified 
+  /// element type
+  QualType getWasmTableType(QualType EltTy) const;
+
   /// Return the unique reference to the matrix type of the specified element
   /// type and size
   ///

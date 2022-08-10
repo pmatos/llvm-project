@@ -2663,7 +2663,7 @@ public:
       : Expr(ArraySubscriptExprClass, t, VK, OK) {
     SubExprs[LHS] = lhs;
     SubExprs[RHS] = rhs;
-    ArrayOrMatrixSubscriptExprBits.RBracketLoc = rbracketloc;
+    AMTSubscriptExprBits.RBracketLoc = rbracketloc;
     setDependence(computeDependence(this));
   }
 
@@ -2700,10 +2700,10 @@ public:
   SourceLocation getEndLoc() const { return getRBracketLoc(); }
 
   SourceLocation getRBracketLoc() const {
-    return ArrayOrMatrixSubscriptExprBits.RBracketLoc;
+    return AMTSubscriptExprBits.RBracketLoc;
   }
   void setRBracketLoc(SourceLocation L) {
-    ArrayOrMatrixSubscriptExprBits.RBracketLoc = L;
+    AMTSubscriptExprBits.RBracketLoc = L;
   }
 
   SourceLocation getExprLoc() const LLVM_READONLY {
@@ -2741,7 +2741,7 @@ public:
     SubExprs[BASE] = Base;
     SubExprs[ROW_IDX] = RowIdx;
     SubExprs[COLUMN_IDX] = ColumnIdx;
-    ArrayOrMatrixSubscriptExprBits.RBracketLoc = RBracketLoc;
+    AMTSubscriptExprBits.RBracketLoc = RBracketLoc;
     setDependence(computeDependence(this));
   }
 
@@ -2782,10 +2782,10 @@ public:
   }
 
   SourceLocation getRBracketLoc() const {
-    return ArrayOrMatrixSubscriptExprBits.RBracketLoc;
+    return AMTSubscriptExprBits.RBracketLoc;
   }
   void setRBracketLoc(SourceLocation L) {
-    ArrayOrMatrixSubscriptExprBits.RBracketLoc = L;
+    AMTSubscriptExprBits.RBracketLoc = L;
   }
 
   static bool classof(const Stmt *T) {

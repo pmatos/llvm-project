@@ -2170,6 +2170,8 @@ def err_reference_bind_to_vector_element : Error<
   "%select{non-const|volatile}0 reference cannot bind to vector element">;
 def err_reference_bind_to_matrix_element : Error<
   "%select{non-const|volatile}0 reference cannot bind to matrix element">;
+def err_reference_bind_to_table_element : Error<
+  "%select{non-const|volatile}0 reference cannot bind to table element">;
 def err_reference_var_requires_init : Error<
   "declaration of reference variable %0 requires an initializer">;
 def err_reference_without_init : Error<
@@ -3029,6 +3031,7 @@ def err_attribute_invalid_bitint_vector_type : Error<
   "'_BitInt' vector element width must be %select{a power of 2|"
   "at least as wide as 'CHAR_BIT'}0">;
 def err_attribute_invalid_matrix_type : Error<"invalid matrix element type %0">;
+def err_attribute_invalid_wasm_table_type : Error<"invalid table element type %0">;
 def err_attribute_bad_neon_vector_size : Error<
   "Neon vector size must be 64 or 128 bits">;
 def err_attribute_invalid_sve_type : Error<
@@ -6912,7 +6915,7 @@ def err_typecheck_sclass_func : Error<"illegal storage class on function">;
 def err_static_block_func : Error<
   "function declared in block scope cannot have 'static' storage class">;
 def err_typecheck_address_of : Error<"address of %select{bit-field"
-  "|vector element|property expression|register variable|matrix element}0 requested">;
+  "|vector element|property expression|register variable|matrix element|table element}0 requested">;
 def ext_typecheck_addrof_void : Extension<
   "ISO C forbids taking the address of an expression of type 'void'">;
 def err_unqualified_pointer_member_function : Error<
@@ -11602,8 +11605,12 @@ def err_builtin_invalid_arg_type: Error <
   "floating point type|"
   "vector of integers}1 (was %2)">;
 
+def err_wasm_table_disabled: Error<
+  "WebAssembly table support is disabled. Pass -mreference-types to enable it">;
 def err_builtin_matrix_disabled: Error<
   "matrix types extension is disabled. Pass -fenable-matrix to enable it">;
+def err_table_index_not_integer: Error<
+  "table index must be an integer">;
 def err_matrix_index_not_integer: Error<
   "matrix %select{row|column}0 index is not an integer">;
 def err_matrix_index_outside_range: Error<
@@ -11741,4 +11748,42 @@ def err_wasm_reference_pr : Error<
   "%select{pointers|references}0 to WebAssembly reference types are illegal">;
 def err_wasm_ca_reference : Error<
   "cannot %select{capture|take address of}0 WebAssembly reference">;
+def err_wasm_addrof_table : Error<
+  "cannot take address of WebAssembly table">;
+def err_wasm_table_pointer : Error<
+  "pointers to WebAssembly tables are illegal">;
+def err_wasm_table_reference : Error<
+  "references to WebAssembly tables are illegal">;
+def err_typecheck_wasm_table_must_have_zero_length : Error<
+  "only zero-length WebAssembly tables are currently supported">;
+def err_wasm_table_in_function : Error<
+  "WebAssembly table cannot be declared within a function">;
+def err_wasm_table_as_function_argument : Error<
+  "cannot use WebAssembly table as a function argument">;
+def err_wasm_table_invalid_uett_operand : Error<
+  "invalid application of '%0' to WebAssembly table">;
+def err_wasm_cast_table : Error<
+  "cannot cast WebAssembly table">;
+def err_wasm_table_conditional_expression : Error<
+  "cannot use WebAssembly tables as the 2nd or 3rd operands of a conditional expression">;
+def err_wasm_table_assignment : Error<
+  "cannot assign WebAssembly table to a variable">;
+def err_wasm_table_return : Error<
+  "cannot return a WebAssembly table">;
+def err_wasm_table_throw : Error<
+  "cannot throw a WebAssembly table">;
+def err_wasm_table_catch : Error<
+  "cannot catch WebAssembly table">;
+def err_wasm_table_exception_spec : Error<
+  "WebAssembly table not allowed in exception sepcification">;
+def err_wasm_table_must_be_static : Error<
+  "WebAssembly table must be static">;
+def err_wasm_multidimensional_ref_array : Error<
+  "multi-dimensional arrays of WebAssembly references are illegal">;
+def err_wasm_builtin_arg_must_be_table_type : Error <
+  "%ordinal0 argument must be a WebAssembly table">;
+def err_wasm_builtin_arg_must_match_table_element_type : Error <
+  "%ordinal0 argument must match the element type of the WebAssembly table in the %ordinal1 argument">;
+def err_wasm_builtin_arg_must_be_integer_type : Error <
+  "%ordinal0 argument must be an integer">;
 } // end of sema component.

@@ -33,9 +33,11 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/IntrinsicsWebAssembly.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/MDBuilder.h"
 #include "llvm/IR/MatrixBuilder.h"
+#include "llvm/Passes/OptimizationLevel.h"
 #include "llvm/Support/ConvertUTF.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/Path.h"
@@ -152,6 +154,7 @@ Address CodeGenFunction::CreateMemTemp(QualType Ty, CharUnits Align,
         Builder.CreateBitCast(Result.getPointer(), VectorTy->getPointerTo()),
         VectorTy, Result.getAlignment());
   }
+  
   return Result;
 }
 
@@ -1935,7 +1938,7 @@ RValue CodeGenFunction::EmitLoadOfLValue(LValue LV, SourceLocation Loc) {
 
     if (LV.getType()->isConstantMatrixType())
       return EmitLoadOfMatrixLValue(LV, Loc, *this);
-
+    
     // Everything needs a load.
     return RValue::get(EmitLoadOfScalar(LV, Loc));
   }
@@ -1964,6 +1967,7 @@ RValue CodeGenFunction::EmitLoadOfLValue(LValue LV, SourceLocation Loc) {
       llvm::MatrixBuilder MB(Builder);
       MB.CreateIndexAssumption(Idx, MatTy->getNumElementsFlattened());
     }
+
     llvm::LoadInst *Load =
         Builder.CreateLoad(LV.getMatrixAddress(), LV.isVolatileQualified());
     return RValue::get(Builder.CreateExtractElement(Load, Idx, "matrixext"));

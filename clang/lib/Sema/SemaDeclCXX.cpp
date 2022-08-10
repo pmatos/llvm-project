@@ -16504,6 +16504,11 @@ VarDecl *Sema::BuildExceptionDeclaration(Scope *S,
     Invalid = true;
   }
 
+  if (!Invalid && BaseType.isWebAssemblyReferenceType()) {
+    Diag(Loc, diag::err_wasm_table_catch);
+    Invalid = true;
+  }
+
   if (!Invalid && !ExDeclType->isDependentType() &&
       RequireNonAbstractType(Loc, ExDeclType,
                              diag::err_abstract_type_in_decl,

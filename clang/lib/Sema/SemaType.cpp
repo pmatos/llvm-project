@@ -2197,11 +2197,19 @@ QualType Sema::BuildPointerType(QualType T,
   if (getLangOpts().OpenCL)
     T = deduceOpenCLPointeeAddrSpace(*this, T);
 
-  // In WebAssembly, pointers to reference types are illegal.
-  if (getASTContext().getTargetInfo().getTriple().isWasm() &&
-      T->isWebAssemblyReferenceType()) {
-    Diag(Loc, diag::err_wasm_reference_pr) << 0;
-    return QualType();
+  // In WebAssembly, pointers to reference types and pointers to tables are
+  // illegal.
+  if (getASTContext().getTargetInfo().getTriple().isWasm()) {
+    if (T.isWebAssemblyReferenceType()) {
+      Diag(Loc, diag::err_wasm_reference_pr) << 0;
+      return QualType();
+    }
+
+    // We need to desugar the type here in case T is a ParenType.
+    if (T->getUnqualifiedDesugaredType()->isWebAssemblyTableType()) {
+      Diag(Loc, diag::err_wasm_table_pointer);
+      return QualType();
+    }
   }
 
   // Build the pointer type.
@@ -2279,10 +2287,14 @@ QualType Sema::BuildReferenceType(QualType T, bool SpelledAsLValue,
   if (getLangOpts().OpenCL)
     T = deduceOpenCLPointeeAddrSpace(*this, T);
 
-  // In WebAssembly, references to reference types are illegal.
+  // In WebAssembly, references to reference types and tables are illegal.
   if (getASTContext().getTargetInfo().getTriple().isWasm() &&
-      T->isWebAssemblyReferenceType()) {
+      T.isWebAssemblyReferenceType()) {
     Diag(Loc, diag::err_wasm_reference_pr) << 1;
+    return QualType();
+  } 
+  if (T->isWebAssemblyTableType()) {
+    Diag(Loc, diag::err_wasm_table_reference);
     return QualType();
   }
 
@@ -2489,12 +2501,22 @@ QualType Sema::BuildArrayType(QualType T, ArrayType::ArraySizeModifier ASM,
   } else {
     // C99 6.7.5.2p1: If the element type is an incomplete or function type,
     // reject it (e.g. void ary[7], struct foo ary[7], void ary[7]())
-    if (RequireCompleteSizedType(Loc, T,
+    if (!T.isWebAssemblyReferenceType() &&
+        RequireCompleteSizedType(Loc, T,
                                  diag::err_array_incomplete_or_sizeless_type))
       return QualType();
   }
 
-  if (T->isSizelessType()) {
+  // Multi-dimensional arrays of WebAssembly references are not allowed.
+  if (Context.getTargetInfo().getTriple().isWasm() && T->isArrayType()) {
+    const auto *ATy = dyn_cast<ArrayType>(T);
+    if (ATy && ATy->getElementType().isWebAssemblyReferenceType()) {
+      Diag(Loc, diag::err_wasm_multidimensional_ref_array);
+      return QualType();
+    }
+  }
+
+  if (T->isSizelessType() && !T.isWebAssemblyReferenceType()) {
     Diag(Loc, diag::err_array_incomplete_or_sizeless_type) << 1 << T;
     return QualType();
   }
@@ -2998,6 +3020,9 @@ QualType Sema::BuildFunctionType(QualType T,
       // Disallow half FP arguments.
       Diag(Loc, diag::err_parameters_retval_cannot_have_fp16_type) << 0 <<
         FixItHint::CreateInsertion(Loc, "*");
+      Invalid = true;
+    } else if (ParamType->isWebAssemblyTableType()) {
+      Diag(Loc, diag::err_wasm_table_as_function_argument);
       Invalid = true;
     }
 

@@ -991,6 +991,13 @@ bool Sema::CheckCXXThrowOperand(SourceLocation ThrowLoc,
       return true;
   }
 
+  // Cannot throw WebAssembly tables (throwing WebAssembly references is
+  // caught earlier in this function).
+  if (Ty.isWebAssemblyReferenceType()) {
+    Diag(ThrowLoc, diag::err_wasm_table_throw) << E->getSourceRange();
+    return true;
+  }
+
   // If the exception has class type, we need additional handling.
   CXXRecordDecl *RD = Ty->getAsCXXRecordDecl();
   if (!RD)
@@ -6562,6 +6569,13 @@ QualType Sema::CXXCheckConditionalOperands(ExprResult &Cond, ExprResult &LHS,
   if (IsSizelessVectorConditional)
     return CheckSizelessVectorConditionalTypes(Cond, LHS, RHS, QuestionLoc);
 
+  // WebAssembly tables are not allowed as conditional LHS or RHS.
+  if (LTy->isWebAssemblyTableType() || RTy->isWebAssemblyTableType()) {
+    Diag(QuestionLoc, diag::err_wasm_table_conditional_expression)
+        << LHS.get()->getSourceRange() << RHS.get()->getSourceRange();
+    return QualType();
+  }
+  
   // C++11 [expr.cond]p3
   //   Otherwise, if the second and third operand have different types, and
   //   either has (cv) class type [...] an attempt is made to convert each of
