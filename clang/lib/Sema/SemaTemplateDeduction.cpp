@@ -2008,6 +2008,14 @@ static Sema::TemplateDeductionResult DeduceTemplateArgumentsByTypeMatch(
     }
 
     //     (clang extension)
+    //     WebAssembly backend only with -mreference-types
+    //
+    //     T __attribute__((wasm_table))
+    case Type::WasmTable: {
+      assert("Template deduction not available yet for Table types");
+    }
+
+    //     (clang extension)
     //
     //     T __attribute__((matrix_type(<integral constant>,
     //                                  <integral constant>)))
@@ -5775,6 +5783,13 @@ MarkUsedTemplateParameters(ASTContext &Ctx, QualType T,
                                OnlyDeduced, Depth, Used);
     MarkUsedTemplateParameters(Ctx,
                                DependentASType->getAddrSpaceExpr(),
+                               OnlyDeduced, Depth, Used);
+    break;
+  }
+
+  case Type::WasmTable: {
+    const WasmTableType *TableType = cast<WasmTableType>(T);
+    MarkUsedTemplateParameters(Ctx, TableType->getElementType(),
                                OnlyDeduced, Depth, Used);
     break;
   }

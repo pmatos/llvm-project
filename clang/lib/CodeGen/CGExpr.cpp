@@ -152,6 +152,9 @@ Address CodeGenFunction::CreateMemTemp(QualType Ty, CharUnits Align,
         Builder.CreateBitCast(Result.getPointer(), VectorTy->getPointerTo()),
         VectorTy, Result.getAlignment());
   }
+  else if (Ty->isWasmTableType()) {
+    assert("wasm table type is not supported yet");
+  }
   return Result;
 }
 
@@ -1844,6 +1847,15 @@ llvm::Value *CodeGenFunction::EmitFromMemory(llvm::Value *Value, QualType Ty) {
   return Value;
 }
 
+static Address MaybeConvertTableAddress(Address Addr, CodeGenFunction &CGF, bool IsVector = true) {
+  assert("Table address cannot yet be converted");
+  return Addr;
+}
+
+static void EmitStoreOfTableScalar(llvm::Value *value, LValue lvalue, bool isInit, CodeGenFunction &CGF) {
+  assert("Table scalar cannot yet be stored");
+}
+
 // Convert the pointer of \p Addr to a pointer to a vector (the value type of
 // MatrixType), if it points to a array (the memory type of MatrixType).
 static Address MaybeConvertMatrixAddress(Address Addr, CodeGenFunction &CGF,
@@ -1936,10 +1948,19 @@ void CodeGenFunction::EmitStoreOfScalar(llvm::Value *value, LValue lvalue,
     EmitStoreOfMatrixScalar(value, lvalue, isInit, *this);
     return;
   }
+  else if(lvalue.getType()->isWasmTableType()) {
+    EmitStoreOfTableScalar(value, lvalue, isInit, *this);
+    return;
+  }
 
   EmitStoreOfScalar(value, lvalue.getAddress(*this), lvalue.isVolatile(),
                     lvalue.getType(), lvalue.getBaseInfo(),
                     lvalue.getTBAAInfo(), isInit, lvalue.isNontemporal());
+}
+
+static RValue EmitLoadOfWasmTableLValue(LValue LV, SourceLocation Loc,
+                                    CodeGenFunction &CGF) {
+  assert("Table lvalue cannot yet be loaded");
 }
 
 // Emit a load of a LValue of matrix type. This may require casting the pointer
@@ -1979,6 +2000,8 @@ RValue CodeGenFunction::EmitLoadOfLValue(LValue LV, SourceLocation Loc) {
 
     if (LV.getType()->isConstantMatrixType())
       return EmitLoadOfMatrixLValue(LV, Loc, *this);
+    else if(LV.getType()->isWasmTableType())
+      return EmitLoadOfWasmTableLValue(LV, Loc, *this);
 
     // Everything needs a load.
     return RValue::get(EmitLoadOfScalar(LV, Loc));

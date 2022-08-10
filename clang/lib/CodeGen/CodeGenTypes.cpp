@@ -95,6 +95,11 @@ llvm::Type *CodeGenTypes::ConvertTypeForMem(QualType T, bool ForBitField) {
     return llvm::ArrayType::get(ConvertType(MT->getElementType()),
                                 MT->getNumRows() * MT->getNumColumns());
   }
+  else if(T->isWasmTableType()) {
+    //FIXME Time to lower table type to LLVM
+    assert("unimplemented");
+    return 0;
+  }
 
   llvm::Type *R = ConvertType(T);
 
@@ -723,6 +728,13 @@ llvm::Type *CodeGenTypes::ConvertType(QualType T) {
                                ? llvm::Type::getInt1Ty(getLLVMContext())
                                : ConvertType(VT->getElementType());
     ResultType = llvm::FixedVectorType::get(IRElemTy, VT->getNumElements());
+    break;
+  }
+  case Type::WasmTable: {
+    const WasmTableType *MT = cast<WasmTableType>(Ty);
+    assert(false && "conversion of type to llvm needs to be done here");
+//    ResultType = 
+//        llvm::FixedVectorType::get(ConvertType(MT->getElementType()));
     break;
   }
   case Type::ConstantMatrix: {

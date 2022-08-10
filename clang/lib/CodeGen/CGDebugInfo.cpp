@@ -3020,6 +3020,19 @@ llvm::DIType *CGDebugInfo::CreateType(const VectorType *Ty,
   return DBuilder.createVectorType(Size, Align, ElementTy, SubscriptArray);
 }
 
+llvm::DIType *CGDebugInfo::CreateType(const WasmTableType *Ty,
+                                      llvm::DIFile *Unit) {
+  // FIXME: Create another debug type for tables
+  // For the time being, it treats it like a nested ArrayType.
+
+  llvm::DIType *ElementTy = getOrCreateType(Ty->getElementType(), Unit);
+  uint64_t Size = CGM.getContext().getTypeSize(Ty);
+  uint32_t Align = getTypeAlignIfRequired(Ty, CGM.getContext());
+  llvm::SmallVector<llvm::Metadata *, 0> Subscripts;
+  llvm::DINodeArray SubscriptArray = DBuilder.getOrCreateArray(Subscripts);
+  return DBuilder.createArrayType(Size, Align, ElementTy, SubscriptArray);
+}
+
 llvm::DIType *CGDebugInfo::CreateType(const ConstantMatrixType *Ty,
                                       llvm::DIFile *Unit) {
   // FIXME: Create another debug type for matrices
@@ -3449,6 +3462,8 @@ llvm::DIType *CGDebugInfo::CreateTypeNode(QualType Ty, llvm::DIFile *Unit) {
   case Type::ExtVector:
   case Type::Vector:
     return CreateType(cast<VectorType>(Ty), Unit);
+  case Type::WasmTable:
+    return CreateType(cast<WasmTableType>(Ty), Unit);
   case Type::ConstantMatrix:
     return CreateType(cast<ConstantMatrixType>(Ty), Unit);
   case Type::ObjCObjectPointer:

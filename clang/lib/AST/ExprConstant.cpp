@@ -11327,6 +11327,7 @@ EvaluateBuiltinClassifyType(QualType T, const LangOptions &LangOpts) {
   case Type::BlockPointer:
   case Type::Vector:
   case Type::ExtVector:
+  case Type::WasmTable:
   case Type::ConstantMatrix:
   case Type::ObjCObject:
   case Type::ObjCInterface:

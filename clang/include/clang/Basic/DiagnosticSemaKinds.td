@@ -3020,6 +3020,7 @@ def err_attribute_too_few_arguments : Error<
   "%0 attribute takes at least %1 argument%s1">;
 def err_attribute_invalid_vector_type : Error<"invalid vector element type %0">;
 def err_attribute_invalid_matrix_type : Error<"invalid matrix element type %0">;
+def err_attribute_invalid_wasm_table_type : Error<"invalid table element type %0">;
 def err_attribute_bad_neon_vector_size : Error<
   "Neon vector size must be 64 or 128 bits">;
 def err_attribute_invalid_sve_type : Error<
@@ -11535,6 +11536,8 @@ def err_builtin_invalid_arg_type: Error <
   "floating point type|"
   "vector of integers}1 (was %2)">;
 
+def err_wasm_table_disabled: Error<
+  "WebAssembly table support is disabled. Pass -mreference-types to enable it">;
 def err_builtin_matrix_disabled: Error<
   "matrix types extension is disabled. Pass -fenable-matrix to enable it">;
 def err_matrix_index_not_integer: Error<

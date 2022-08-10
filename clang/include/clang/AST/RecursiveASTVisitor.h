@@ -1047,6 +1047,8 @@ DEF_TRAVERSE_TYPE(VectorType, { TRY_TO(TraverseType(T->getElementType())); })
 
 DEF_TRAVERSE_TYPE(ExtVectorType, { TRY_TO(TraverseType(T->getElementType())); })
 
+DEF_TRAVERSE_TYPE(WasmTableType, { TRY_TO(TraverseType(T->getElementType())); })
+
 DEF_TRAVERSE_TYPE(ConstantMatrixType,
                   { TRY_TO(TraverseType(T->getElementType())); })
 
@@ -1310,6 +1312,10 @@ DEF_TRAVERSE_TYPELOC(DependentVectorType, {
 // FIXME: size and attributes
 // FIXME: base VectorTypeLoc is unfinished
 DEF_TRAVERSE_TYPELOC(ExtVectorType, {
+  TRY_TO(TraverseType(TL.getTypePtr()->getElementType()));
+})
+
+DEF_TRAVERSE_TYPELOC(WasmTableType, {
   TRY_TO(TraverseType(TL.getTypePtr()->getElementType()));
 })
 

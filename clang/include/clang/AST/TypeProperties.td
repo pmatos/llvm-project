@@ -224,6 +224,16 @@ let Class = DependentSizedExtVectorType in {
   }]>;
 }
 
+let Class = WasmTableType in {
+  def : Property<"elementType", QualType> {
+    let Read = [{ node->getElementType() }];
+  }
+
+  def : Creator<[{
+    return ctx.getWasmTableType(elementType);
+  }]>;
+}
+
 let Class = MatrixType in {
   def : Property<"elementType", QualType> {
     let Read = [{ node->getElementType() }];

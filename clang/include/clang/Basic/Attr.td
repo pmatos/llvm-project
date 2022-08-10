@@ -4052,3 +4052,11 @@ def WebAssemblyFuncref : TypeAttr, TargetSpecificAttr<TargetWebAssembly> {
   let Spellings = [Keyword<"__funcref">];
   let Documentation = [Undocumented];
 }
+
+def WasmTableType : TypeAttr {
+  let Spellings = [Clang<"wasm_table">];
+  let Subjects = SubjectList<[TypedefName], ErrorDiag>;
+  let Documentation = [Undocumented];
+  let ASTNode = 0;
+  let PragmaAttributeSupport = 0;
+}

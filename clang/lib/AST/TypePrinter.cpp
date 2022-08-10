@@ -282,6 +282,7 @@ bool TypePrinter::canPrefixQualifiers(const Type *T,
     case Type::DependentSizedExtVector:
     case Type::Vector:
     case Type::ExtVector:
+    case Type::WasmTable:
     case Type::ConstantMatrix:
     case Type::DependentSizedMatrix:
     case Type::FunctionProto:
@@ -779,6 +780,17 @@ void TypePrinter::printExtVectorAfter(const ExtVectorType *T, raw_ostream &OS) {
   OS << " __attribute__((ext_vector_type(";
   OS << T->getNumElements();
   OS << ")))";
+}
+
+void TypePrinter::printWasmTableBefore(const WasmTableType *T,
+                                       raw_ostream &OS) {
+  printBefore(T->getElementType(), OS);
+  OS << "__attribute__((wasm_table))";
+}
+
+void TypePrinter::printWasmTableAfter(const WasmTableType *T,
+                                      raw_ostream &OS) {
+  printAfter(T->getElementType(), OS);
 }
 
 void TypePrinter::printConstantMatrixBefore(const ConstantMatrixType *T,

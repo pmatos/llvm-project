@@ -6091,6 +6091,11 @@ bool UnnamedLocalNoLinkageFinder::VisitExtVectorType(const ExtVectorType* T) {
   return Visit(T->getElementType());
 }
 
+bool UnnamedLocalNoLinkageFinder::VisitWasmTableType(
+    const WasmTableType *T) {
+  return Visit(T->getElementType());
+}
+
 bool UnnamedLocalNoLinkageFinder::VisitConstantMatrixType(
     const ConstantMatrixType *T) {
   return Visit(T->getElementType());

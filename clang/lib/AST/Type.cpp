@@ -282,6 +282,12 @@ void DependentAddressSpaceType::Profile(llvm::FoldingSetNodeID &ID,
   AddrSpaceExpr->Profile(ID, Context, true);
 }
 
+WasmTableType::WasmTableType(QualType ElementType, QualType canonType)
+    : Type(WasmTable, canonType,
+           TypeDependence::DependentInstantiation |
+               ElementType->getDependence()),
+      ElementType(ElementType) {}
+
 MatrixType::MatrixType(TypeClass tc, QualType matrixType, QualType canonType,
                        const Expr *RowExpr, const Expr *ColumnExpr)
     : Type(tc, canonType,
@@ -1012,6 +1018,17 @@ public:
       return QualType(T, 0);
 
     return Ctx.getExtVectorType(elementType, T->getNumElements());
+  }
+
+  QualType VisitWasmTableType(const WasmTableType *T) {
+    QualType elementType = recurse(T->getElementType());
+    if (elementType.isNull())
+      return {};
+
+    if (elementType.getAsOpaquePtr() == T->getElementType().getAsOpaquePtr())
+      return QualType(T, 0);
+
+    return Ctx.getWasmTableType(elementType);
   }
 
   QualType VisitConstantMatrixType(const ConstantMatrixType *T) {
@@ -3975,6 +3992,8 @@ static CachedProperties computeCachedProperties(const Type *T) {
   case Type::Vector:
   case Type::ExtVector:
     return Cache::get(cast<VectorType>(T)->getElementType());
+  case Type::WasmTable:
+    return Cache::get(cast<WasmTableType>(T)->getElementType());
   case Type::ConstantMatrix:
     return Cache::get(cast<ConstantMatrixType>(T)->getElementType());
   case Type::FunctionNoProto:
@@ -4063,6 +4082,9 @@ LinkageInfo LinkageComputer::computeTypeLinkageInfo(const Type *T) {
   case Type::Vector:
   case Type::ExtVector:
     return computeTypeLinkageInfo(cast<VectorType>(T)->getElementType());
+  case Type::WasmTable:
+    return computeTypeLinkageInfo(
+        cast<WasmTableType>(T)->getElementType());
   case Type::ConstantMatrix:
     return computeTypeLinkageInfo(
         cast<ConstantMatrixType>(T)->getElementType());
@@ -4237,6 +4259,7 @@ bool Type::canHaveNullability(bool ResultIfUnknown) const {
   case Type::DependentSizedExtVector:
   case Type::Vector:
   case Type::ExtVector:
+  case Type::WasmTable:
   case Type::ConstantMatrix:
   case Type::DependentSizedMatrix:
   case Type::DependentAddressSpace:

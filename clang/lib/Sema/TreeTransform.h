@@ -896,6 +896,9 @@ public:
                                               Expr *SizeExpr,
                                               SourceLocation AttributeLoc);
 
+  /// Build a new WebAssembly Table Type given the element type.
+  QualType RebuildWasmTableType(QualType ElementType);
+
   /// Build a new matrix type given the element type and dimensions.
   QualType RebuildConstantMatrixType(QualType ElementType, unsigned NumRows,
                                      unsigned NumColumns);
@@ -5421,6 +5424,28 @@ QualType TreeTransform<Derived>::TransformDependentSizedExtVectorType(
     ExtVectorTypeLoc NewTL = TLB.push<ExtVectorTypeLoc>(Result);
     NewTL.setNameLoc(TL.getNameLoc());
   }
+
+  return Result;
+}
+
+template <typename Derived>
+QualType
+TreeTransform<Derived>::TransformWasmTableType(TypeLocBuilder &TLB,
+                                               WasmTableTypeLoc TL) {
+  const WasmTableType *T = TL.getTypePtr();
+  QualType ElementType = getDerived().TransformType(T->getElementType());
+  if (ElementType.isNull())
+    return QualType();
+
+  QualType Result = TL.getType();
+  if (getDerived().AlwaysRebuild() || ElementType != T->getElementType()) {
+    Result = getDerived().RebuildWasmTableType(ElementType);
+    if (Result.isNull())
+      return QualType();
+  }
+
+  WasmTableTypeLoc NewTL = TLB.push<WasmTableTypeLoc>(Result);
+  NewTL.setAttrNameLoc(TL.getAttrNameLoc());
 
   return Result;
 }
@@ -14639,6 +14664,11 @@ TreeTransform<Derived>::RebuildDependentSizedExtVectorType(QualType ElementType,
                                                            Expr *SizeExpr,
                                                   SourceLocation AttributeLoc) {
   return SemaRef.BuildExtVectorType(ElementType, SizeExpr, AttributeLoc);
+}
+
+template <typename Derived>
+QualType TreeTransform<Derived>::RebuildWasmTableType(QualType ElementType) {
+  return SemaRef.Context.getWasmTableType(ElementType);
 }
 
 template <typename Derived>

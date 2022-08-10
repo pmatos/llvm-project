@@ -846,6 +846,16 @@ static bool IsStructurallyEquivalent(StructuralEquivalenceContext &Context,
     break;
   }
 
+  case Type::WasmTable: {
+    const WasmTableType *Table1 = cast<WasmTableType>(T1);
+    const WasmTableType *Table2 = cast<WasmTableType>(T2);
+    // The element types must be structurally equivalent
+    if (!IsStructurallyEquivalent(Context, Table1->getElementType(),
+                                  Table2->getElementType()))
+      return false;
+    break;
+  }
+
   case Type::DependentSizedMatrix: {
     const DependentSizedMatrixType *Mat1 = cast<DependentSizedMatrixType>(T1);
     const DependentSizedMatrixType *Mat2 = cast<DependentSizedMatrixType>(T2);

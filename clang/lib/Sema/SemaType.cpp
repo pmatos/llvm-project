@@ -2743,6 +2743,19 @@ QualType Sema::BuildExtVectorType(QualType T, Expr *ArraySize,
   return Context.getDependentSizedExtVectorType(T, ArraySize, AttrLoc);
 }
 
+QualType Sema::BuildWasmTableType(QualType ElementTy, SourceLocation AttrLoc) {
+
+  // Check element type, if it is not dependent.
+  // FIXME: What's a dependent type and is it important for Wasm tables?
+  if (!ElementTy->isDependentType() &&
+      !WasmTableType::isValidElementType(ElementTy)) {
+    Diag(AttrLoc, diag::err_attribute_invalid_wasm_table_type) << ElementTy;
+    return QualType();
+  }
+
+  return Context.getWasmTableType(ElementTy);
+}
+
 QualType Sema::BuildMatrixType(QualType ElementTy, Expr *NumRows, Expr *NumCols,
                                SourceLocation AttrLoc) {
   assert(Context.getLangOpts().MatrixTypes &&
@@ -6417,6 +6430,18 @@ static void fillMatrixTypeLoc(MatrixTypeLoc MTL,
   llvm_unreachable("no matrix_type attribute found at the expected location!");
 }
 
+static void fillWasmTableTypeLoc(WasmTableTypeLoc WTL,
+                                 const ParsedAttributesView &Attrs) {
+  for (const ParsedAttr &AL : Attrs) {
+    if (AL.getKind() == ParsedAttr::AT_WasmTableType) {
+      WTL.setAttrNameLoc(AL.getLoc());
+      return;
+    }
+  }
+
+  llvm_unreachable("no wasm_table attribute found at the expected location!");
+}
+
 /// Create and instantiate a TypeSourceInfo with type source information.
 ///
 /// \param T QualType referring to the type as written in source code.
@@ -6467,6 +6492,9 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
 
     if (MatrixTypeLoc TL = CurrTL.getAs<MatrixTypeLoc>())
       fillMatrixTypeLoc(TL, D.getTypeObject(i).getAttrs());
+
+    if (WasmTableTypeLoc TL = CurrTL.getAs<WasmTableTypeLoc>())
+      fillWasmTableTypeLoc(TL, D.getTypeObject(i).getAttrs());
 
     // FIXME: Ordering here?
     while (AdjustedTypeLoc TL = CurrTL.getAs<AdjustedTypeLoc>())
@@ -8227,6 +8255,22 @@ static void HandleOpenCLAccessAttr(QualType &CurType, const ParsedAttr &Attr,
   }
 }
 
+/// HandleWasmTableTypeAttr - "wasm_table" attribute, like matrix_type
+static void HandleWasmTableTypeAttr(QualType &CurType, const ParsedAttr &Attr,
+                                    Sema &S) {
+  // FIXME: should we check here to see if reference types are enabled?
+
+  if (Attr.getNumArgs() != 0) {
+    S.Diag(Attr.getLoc(), diag::err_attribute_wrong_number_arguments)
+        << Attr << 0;
+    return;
+  }
+
+  QualType T = S.BuildWasmTableType(CurType, Attr.getLoc());
+  if (!T.isNull())
+    CurType = T;
+}
+
 /// HandleMatrixTypeAttr - "matrix_type" attribute, like ext_vector_type
 static void HandleMatrixTypeAttr(QualType &CurType, const ParsedAttr &Attr,
                                  Sema &S) {
@@ -8442,6 +8486,11 @@ static void processTypeAttrs(TypeProcessingState &state, QualType &type,
       state.setParsedNoDeref(true);
       break;
     }
+
+    case ParsedAttr::AT_WasmTableType:
+      HandleWasmTableTypeAttr(type, attr, state.getSema());
+      attr.setUsedAsTypeAttr();
+      break;
 
     case ParsedAttr::AT_MatrixType:
       HandleMatrixTypeAttr(type, attr, state.getSema());

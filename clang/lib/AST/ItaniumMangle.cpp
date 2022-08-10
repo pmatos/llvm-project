@@ -2299,6 +2299,7 @@ bool CXXNameMangler::mangleUnresolvedTypeOrSimpleId(QualType Ty,
   case Type::DependentSizedExtVector:
   case Type::Vector:
   case Type::ExtVector:
+  case Type::WasmTable:
   case Type::ConstantMatrix:
   case Type::DependentSizedMatrix:
   case Type::FunctionProto:
@@ -3789,6 +3790,19 @@ void CXXNameMangler::mangleType(const DependentSizedExtVectorType *T) {
   Out << '_';
   mangleType(T->getElementType());
 }
+
+void CXXNameMangler::mangleType(const WasmTableType *T) {
+  // Mangle table types as a vendor extended type:
+  // u<Len>wasm_table_typeI<element type>E
+
+  StringRef VendorQualifier = "wasm_table_type";
+  Out << "u" << VendorQualifier.size() << VendorQualifier;
+
+  Out << "I";
+  mangleType(T->getElementType());
+  Out << "E";
+}
+
 
 void CXXNameMangler::mangleType(const ConstantMatrixType *T) {
   // Mangle matrix types as a vendor extended type:
