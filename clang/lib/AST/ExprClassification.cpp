@@ -233,6 +233,10 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
   case Expr::MatrixSubscriptExprClass:
     return ClassifyInternal(Ctx, cast<MatrixSubscriptExpr>(E)->getBase());
 
+  // Subscripting table types behaves like member accesses.
+  case Expr::TableSubscriptExprClass:
+    return ClassifyInternal(Ctx, cast<TableSubscriptExpr>(E)->getBase());
+
     // C++ [expr.prim.general]p3: The result is an lvalue if the entity is a
     //   function or variable and a prvalue otherwise.
   case Expr::DeclRefExprClass:

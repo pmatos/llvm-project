@@ -1197,7 +1197,7 @@ WebAssemblyTargetLowering::LowerCall(CallLoweringInfo &CLI,
   // Lastly, if this is a call to a funcref we need to add an instruction
   // table.set to the chain and transform the call.
   if (CLI.CB &&
-      WebAssembly::isFuncrefType(CLI.CB->getCalledOperand()->getType())) {
+      CLI.CB->getCalledOperand()->getType()->isWebAssemblyFuncrefType()) {
     // In the absence of function references proposal where a funcref call is
     // lowered to call_ref, using reference types we generate a table.set to set
     // the funcref to a special table used solely for this purpose, followed by

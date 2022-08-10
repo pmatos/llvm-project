@@ -20,6 +20,7 @@
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/TypeSize.h"
+#include "llvm/CodeGen/WasmAddressSpaces.h"
 #include <cassert>
 #include <cstdint>
 #include <iterator>
@@ -179,6 +180,21 @@ public:
 
   /// Return true if this is X86 AMX.
   bool isX86_AMXTy() const { return getTypeID() == X86_AMXTyID; }
+
+  /// Return true if this is a WebAssembly Reference Type.
+  bool isWebAssemblyReferenceType() const { return isWebAssemblyExternrefType() || isWebAssemblyFuncrefType(); }
+
+  /// Return true if this is a WebAssembly Externref Type.
+  bool isWebAssemblyExternrefType() const {
+    return getPointerAddressSpace() ==
+             WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_EXTERNREF;
+  }
+
+  /// Return true if this is a WebAssembly Funcref Type.
+  bool isWebAssemblyFuncrefType() const {
+    return getPointerAddressSpace() ==
+             WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_FUNCREF;
+  }
 
   /// Return true if this is a FP type or a vector of FP.
   bool isFPOrFPVectorTy() const { return getScalarType()->isFloatingPointTy(); }

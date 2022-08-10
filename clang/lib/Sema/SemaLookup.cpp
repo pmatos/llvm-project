@@ -3187,6 +3187,7 @@ addAssociatedClassesAndNamespaces(AssociatedLookup &Result, QualType Ty) {
     case Type::Vector:
     case Type::ExtVector:
     case Type::ConstantMatrix:
+    case Type::WasmTable:
     case Type::Complex:
     case Type::BitInt:
       break;

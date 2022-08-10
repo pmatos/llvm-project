@@ -423,6 +423,11 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
     K = CXCursor_UnexposedExpr;
     break;
 
+  case Stmt::TableSubscriptExprClass:
+    // TODO: add support for TableSubscriptExpr.
+    K = CXCursor_UnexposedExpr;
+    break;
+
   case Stmt::OMPArraySectionExprClass:
     K = CXCursor_OMPArraySectionExpr;
     break;

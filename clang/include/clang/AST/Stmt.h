@@ -448,9 +448,10 @@ protected:
     unsigned IsType : 1; // true if operand is a type, false if an expression.
   };
 
-  class ArrayOrMatrixSubscriptExprBitfields {
+  class AMTSubscriptExprBitfields {
     friend class ArraySubscriptExpr;
     friend class MatrixSubscriptExpr;
+    friend class TableSubscriptExpr;
 
     unsigned : NumExprBits;
 
@@ -1030,7 +1031,7 @@ protected:
     CharacterLiteralBitfields CharacterLiteralBits;
     UnaryOperatorBitfields UnaryOperatorBits;
     UnaryExprOrTypeTraitExprBitfields UnaryExprOrTypeTraitExprBits;
-    ArrayOrMatrixSubscriptExprBitfields ArrayOrMatrixSubscriptExprBits;
+    AMTSubscriptExprBitfields AMTSubscriptExprBits;
     CallExprBitfields CallExprBits;
     MemberExprBitfields MemberExprBits;
     CastExprBitfields CastExprBits;

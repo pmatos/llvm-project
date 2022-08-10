@@ -896,6 +896,9 @@ public:
                                               Expr *SizeExpr,
                                               SourceLocation AttributeLoc);
 
+  /// Build a new WebAssembly Table Type given the element type.
+  QualType RebuildWasmTableType(QualType ElementType);
+
   /// Build a new matrix type given the element type and dimensions.
   QualType RebuildConstantMatrixType(QualType ElementType, unsigned NumRows,
                                      unsigned NumColumns);
@@ -2598,6 +2601,15 @@ public:
                                         SourceLocation RBracketLoc) {
     return getSema().CreateBuiltinMatrixSubscriptExpr(Base, RowIdx, ColumnIdx,
                                                       RBracketLoc);
+  }
+
+  /// Build a new table subscript expression.
+  ///
+  /// By default, performs semantic analysis to build the new expression.
+  /// Subclasses may override this routine to provide different behavior.
+  ExprResult RebuildTableSubscriptExpr(Expr *Base, Expr *Idx,
+                                       SourceLocation RBracketLoc) {
+    return getSema().CreateBuiltinTableSubscriptExpr(Base, Idx, RBracketLoc);
   }
 
   /// Build a new array section expression.
@@ -5420,6 +5432,28 @@ QualType TreeTransform<Derived>::TransformDependentSizedExtVectorType(
     ExtVectorTypeLoc NewTL = TLB.push<ExtVectorTypeLoc>(Result);
     NewTL.setNameLoc(TL.getNameLoc());
   }
+
+  return Result;
+}
+
+template <typename Derived>
+QualType
+TreeTransform<Derived>::TransformWasmTableType(TypeLocBuilder &TLB,
+                                               WasmTableTypeLoc TL) {
+  const WasmTableType *T = TL.getTypePtr();
+  QualType ElementType = getDerived().TransformType(T->getElementType());
+  if (ElementType.isNull())
+    return QualType();
+
+  QualType Result = TL.getType();
+  if (getDerived().AlwaysRebuild() || ElementType != T->getElementType()) {
+    Result = getDerived().RebuildWasmTableType(ElementType);
+    if (Result.isNull())
+      return QualType();
+  }
+
+  WasmTableTypeLoc NewTL = TLB.push<WasmTableTypeLoc>(Result);
+  NewTL.setAttrNameLoc(TL.getAttrNameLoc());
 
   return Result;
 }
@@ -10916,6 +10950,25 @@ TreeTransform<Derived>::TransformMatrixSubscriptExpr(MatrixSubscriptExpr *E) {
 
 template <typename Derived>
 ExprResult
+TreeTransform<Derived>::TransformTableSubscriptExpr(TableSubscriptExpr *E) {
+  ExprResult Base = getDerived().TransformExpr(E->getBase());
+  if (Base.isInvalid())
+    return ExprError();
+
+  ExprResult Idx = getDerived().TransformExpr(E->getIdx());
+  if (Idx.isInvalid())
+    return ExprError();
+
+  if (!getDerived().AlwaysRebuild() && Base.get() == E->getBase() &&
+      Idx.get() == E->getIdx())
+    return E;
+
+  return getDerived().RebuildTableSubscriptExpr(
+      Base.get(), Idx.get(), E->getRBracketLoc());
+}
+
+template <typename Derived>
+ExprResult
 TreeTransform<Derived>::TransformOMPArraySectionExpr(OMPArraySectionExpr *E) {
   ExprResult Base = getDerived().TransformExpr(E->getBase());
   if (Base.isInvalid())
@@ -14629,6 +14682,11 @@ TreeTransform<Derived>::RebuildDependentSizedExtVectorType(QualType ElementType,
                                                            Expr *SizeExpr,
                                                   SourceLocation AttributeLoc) {
   return SemaRef.BuildExtVectorType(ElementType, SizeExpr, AttributeLoc);
+}
+
+template <typename Derived>
+QualType TreeTransform<Derived>::RebuildWasmTableType(QualType ElementType) {
+  return SemaRef.Context.getWasmTableType(ElementType);
 }
 
 template <typename Derived>
