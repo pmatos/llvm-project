@@ -4787,6 +4787,15 @@ recurse:
     break;
   }
 
+  case Expr::TableSubscriptExprClass: {
+    NotPrimaryExpr();
+    const TableSubscriptExpr *ME = cast<TableSubscriptExpr>(E);
+    Out << "ixix";
+    mangleExpression(ME->getBase());
+    mangleExpression(ME->getIdx());
+    break;
+  }
+
   case Expr::CompoundAssignOperatorClass: // fallthrough
   case Expr::BinaryOperatorClass: {
     NotPrimaryExpr();

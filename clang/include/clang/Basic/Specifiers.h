@@ -151,7 +151,10 @@ namespace clang {
     OK_ObjCSubscript,
 
     /// A matrix component is a single element of a matrix.
-    OK_MatrixComponent
+    OK_MatrixComponent,
+
+    /// A table component is a single element of a WebAssembly table.
+    OK_TableComponent,
   };
 
   /// The reason why a DeclRefExpr does not constitute an odr-use.

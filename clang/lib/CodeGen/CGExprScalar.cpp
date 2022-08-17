@@ -540,6 +540,7 @@ public:
 
   Value *VisitArraySubscriptExpr(ArraySubscriptExpr *E);
   Value *VisitMatrixSubscriptExpr(MatrixSubscriptExpr *E);
+  Value *VisitTableSubscriptExpr(TableSubscriptExpr *E);
   Value *VisitShuffleVectorExpr(ShuffleVectorExpr *E);
   Value *VisitConvertVectorExpr(ConvertVectorExpr *E);
   Value *VisitMemberExpr(MemberExpr *E);
@@ -1801,6 +1802,27 @@ Value *ScalarExprEmitter::VisitMatrixSubscriptExpr(MatrixSubscriptExpr *E) {
 
   // TODO: Should we emit bounds checks with SanitizerKind::ArrayBounds?
   return Builder.CreateExtractElement(Matrix, Idx, "matrixext");
+}
+
+Value *ScalarExprEmitter::VisitTableSubscriptExpr(TableSubscriptExpr *E) {
+  TestAndClearIgnoreResultAssign();
+
+  // Handle the vector case.  The base must be a vector, the index must be an
+  // integer value.
+  Value *Idx = Visit(E->getIdx());
+
+  const auto *TableTy = E->getBase()->getType()->castAs<WasmTableType>();
+  //unsigned NumElements = TableTy->getNumElements();
+  //llvm::TableBuilder MB(Builder);
+  //Value *Idx = MB.CreateIndex(Idx, NumElements);
+  // FIXME Unsure about this
+  //  if (CGF.CGM.getCodeGenOpts().OptimizationLevel > 0)
+  //  MB.CreateIndexAssumption(Idx, MatrixTy->getNumElementsFlattened());
+
+  Value *Table = Visit(E->getBase());
+
+  // TODO: Should we emit bounds checks with SanitizerKind::ArrayBounds?
+  return Builder.CreateExtractElement(Table, Idx, "tableext");
 }
 
 static int getMaskElt(llvm::ShuffleVectorInst *SVI, unsigned Idx,

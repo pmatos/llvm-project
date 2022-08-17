@@ -36,6 +36,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/MDBuilder.h"
 #include "llvm/IR/MatrixBuilder.h"
+#include "llvm/Passes/OptimizationLevel.h"
 #include "llvm/Support/ConvertUTF.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/Path.h"
@@ -1425,6 +1426,8 @@ LValue CodeGenFunction::EmitLValue(const Expr *E) {
     return EmitArraySubscriptExpr(cast<ArraySubscriptExpr>(E));
   case Expr::MatrixSubscriptExprClass:
     return EmitMatrixSubscriptExpr(cast<MatrixSubscriptExpr>(E));
+  case Expr::TableSubscriptExprClass:
+    return EmitTableSubscriptExpr(cast<TableSubscriptExpr>(E));
   case Expr::OMPArraySectionExprClass:
     return EmitOMPArraySectionExpr(cast<OMPArraySectionExpr>(E));
   case Expr::ExtVectorElementExprClass:
@@ -1961,6 +1964,7 @@ void CodeGenFunction::EmitStoreOfScalar(llvm::Value *value, LValue lvalue,
 static RValue EmitLoadOfWasmTableLValue(LValue LV, SourceLocation Loc,
                                     CodeGenFunction &CGF) {
   assert("Table lvalue cannot yet be loaded");
+  return RValue();
 }
 
 // Emit a load of a LValue of matrix type. This may require casting the pointer
@@ -2031,9 +2035,22 @@ RValue CodeGenFunction::EmitLoadOfLValue(LValue LV, SourceLocation Loc) {
       llvm::MatrixBuilder MB(Builder);
       MB.CreateIndexAssumption(Idx, MatTy->getNumElementsFlattened());
     }
+
     llvm::LoadInst *Load =
         Builder.CreateLoad(LV.getMatrixAddress(), LV.isVolatileQualified());
     return RValue::get(Builder.CreateExtractElement(Load, Idx, "matrixext"));
+  }
+
+  if(LV.isTableElt()) {
+    llvm::Value *Idx = LV.getTableIdx();
+    if (CGM.getCodeGenOpts().OptimizationLevel > 0) {
+      const auto *const TabTy = LV.getType()->castAs<WasmTableType>();
+      (void) TabTy;
+      // need to emit something here!!!
+      //llvm::TableBuilder TB(Builder);
+      // FIXME: unsure what this CreateIndexAssumption does exactly
+      // MB.CreateIndexAssumption(Idx, TabTy->getNumElementsFlattened());
+    }
   }
 
   assert(LV.isBitField() && "Unknown LValue type!");
@@ -2193,6 +2210,24 @@ void CodeGenFunction::EmitStoreThroughLValue(RValue Src, LValue Dst,
           Builder.CreateInsertElement(Load, Src.getScalarVal(), Idx, "matins");
       Builder.CreateStore(Vec, Dst.getMatrixAddress(),
                           Dst.isVolatileQualified());
+      return;
+    }
+
+    if (Dst.isTableElt()) {
+      llvm::Value *Idx = Dst.getTableIdx();
+      if (CGM.getCodeGenOpts().OptimizationLevel > 0) {
+        const auto *const TabTy = Dst.getType()->castAs<WasmTableType>();
+        llvm::TableBuilder MB(Builder);
+        // FIXME again unsure what this does exactly
+        // MB.CreateIndexAssumption(Idx, MatTy->getNumElementsFlattened());
+      }
+      // FIXME at this point we should generate an LLVM table store intrinsic
+      assert (false);
+      //llvm::Instruction *Load = Builder.CreateLoad(Dst.getTableAddress());
+      //llvm::Value *Vec =
+      //    Builder.CreateInsertElement(Load, Src.getScalarVal(), Idx, "matins");
+      //Builder.CreateStore(Vec, Dst.getMatrixAddress(),
+      //                    Dst.isVolatileQualified());
       return;
     }
 
@@ -3992,6 +4027,21 @@ LValue CodeGenFunction::EmitMatrixSubscriptExpr(const MatrixSubscriptExpr *E) {
       MaybeConvertMatrixAddress(Base.getAddress(*this), *this), FinalIdx,
       E->getBase()->getType(), Base.getBaseInfo(), TBAAAccessInfo());
 }
+
+LValue CodeGenFunction::EmitTableSubscriptExpr(const TableSubscriptExpr *E) {
+  // FIXME unsure how to emit this tbh
+  LValue Base = EmitLValue(E->getBase());
+  llvm::Value *Idx = EmitScalarExpr(E->getIdx());
+  llvm::Value *NumRows = Builder.getIntN(
+      RowIdx->getType()->getScalarSizeInBits(),
+      E->getBase()->getType()->castAs<ConstantMatrixType>()->getNumRows());
+  llvm::Value *FinalIdx =
+      Builder.CreateAdd(Builder.CreateMul(ColIdx, NumRows), RowIdx);
+  return LValue::MakeTableElt(
+      MaybeConvertMatrixAddress(Base.getAddress(*this), *this), FinalIdx,
+      E->getBase()->getType(), Base.getBaseInfo(), TBAAAccessInfo());
+}
+
 
 static Address emitOMPArraySectionBase(CodeGenFunction &CGF, const Expr *Base,
                                        LValueBaseInfo &BaseInfo,

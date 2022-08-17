@@ -4507,6 +4507,7 @@ static void captureVariablyModifiedType(ASTContext &Context, QualType T,
     case Type::Vector:
     case Type::ExtVector:
     case Type::ConstantMatrix:
+    case Type::WasmTable:
     case Type::Record:
     case Type::Enum:
     case Type::TemplateSpecialization:
@@ -4873,6 +4874,17 @@ ExprResult Sema::ActOnArraySubscriptExpr(Scope *S, Expr *base,
                                             ArgExprs.front(), rbLoc);
   }
 
+  // Check if base and idx form a TableSubscriptExpr.
+  auto *tabSubscriptE = dyn_cast<TableSubscriptExpr>(base);
+  if (tabSubscriptE) {
+    assert(ArgExprs.size() == 1);
+    if (CheckAndReportCommaError(ArgExprs.front()))
+      return ExprError();
+
+    return CreateBuiltinTableSubscriptExpr(tabSubscriptE->getBase(),
+                                           tabSubscriptE->getIdx(), rbLoc);
+  }
+
   // Handle any non-overload placeholder types in the base and index
   // expressions.  We can't handle overloads here because the other
   // operand might be an overloadable type, in which case the overload
@@ -4976,6 +4988,59 @@ ExprResult Sema::tryConvertExprToType(Expr *E, QualType Ty) {
       InitializationKind::CreateCopy(E->getBeginLoc(), SourceLocation());
   InitializationSequence InitSeq(*this, Entity, Kind, E);
   return InitSeq.Perform(*this, Entity, Kind, E);
+}
+
+ExprResult Sema::CreateBuiltinTableSubscriptExpr(Expr *Base, Expr *Idx,
+                                                SourceLocation RBLoc) {
+  ExprResult BaseR = CheckPlaceholderExpr(Base);
+  if (BaseR.isInvalid())
+    return BaseR;
+  Base = BaseR.get();
+
+  ExprResult IdxR = CheckPlaceholderExpr(Idx);
+  if (IdxR.isInvalid())
+    return IdxR;
+  Idx = IdxR.get();
+
+  // Build an unanalyzed expression if any of the operands is type-dependent.
+  if (Base->isTypeDependent() || Idx->isTypeDependent())
+    return new (Context) TableSubscriptExpr(Base, Idx, Context.DependentTy, RBLoc);
+
+  // Check that IndexExpr is an integer expression. If it is a constant
+  // expression, check that it is less than Dim (= the number of elements in the
+  // corresponding dimension).
+  auto IsIndexValid = [&](Expr *IndexExpr, unsigned Dim,
+                          bool IsIdx) -> Expr * {
+    if (!IndexExpr->getType()->isIntegerType() &&
+        !IndexExpr->isTypeDependent()) {
+      Diag(IndexExpr->getBeginLoc(), diag::err_table_index_not_integer)
+          << IsIdx;
+      return nullptr;
+    }
+
+    if (Optional<llvm::APSInt> Idx =
+            IndexExpr->getIntegerConstantExpr(Context)) {
+      if ((*Idx < 0 || *Idx >= Dim)) {
+        Diag(IndexExpr->getBeginLoc(), diag::err_table_index_outside_range)
+            << IsIdx << Dim;
+        return nullptr;
+      }
+    }
+
+    ExprResult ConvExpr =
+        tryConvertExprToType(IndexExpr, Context.getSizeType());
+    assert(!ConvExpr.isInvalid() &&
+           "should be able to convert any integer type to size type");
+    return ConvExpr.get();
+  };
+
+  auto *TTy = Base->getType()->getAs<WasmTableType>();
+  Idx = IsIndexValid(Idx, MTy->getNumRows(), false);
+  if (!RowIdx || !ColumnIdx)
+    return ExprError();
+
+  return new (Context) MatrixSubscriptExpr(Base, RowIdx, ColumnIdx,
+                                           MTy->getElementType(), RBLoc);
 }
 
 ExprResult Sema::CreateBuiltinMatrixSubscriptExpr(Expr *Base, Expr *RowIdx,
@@ -14239,7 +14304,8 @@ enum {
   AO_Property_Expansion = 2,
   AO_Register_Variable = 3,
   AO_Matrix_Element = 4,
-  AO_No_Error = 5
+  AO_Table_Element = 5,
+  AO_No_Error = 6
 };
 }
 /// Diagnose invalid operand for address of operations.
@@ -14410,6 +14476,9 @@ QualType Sema::CheckAddressOfOperand(ExprResult &OrigOp, SourceLocation OpLoc) {
   } else if (op->getObjectKind() == OK_MatrixComponent) {
     // The operand cannot be an element of a matrix.
     AddressOfError = AO_Matrix_Element;
+  } else if (op->getObjectKind() == OK_TableComponent) {
+    // The operand cannot be an element of a table.
+    AddressOfError = AO_Table_Element;
   } else if (dcl) { // C99 6.5.3.2p1
     // We have an lvalue with a decl. Make sure the decl is not declared
     // with the register storage-class specifier.

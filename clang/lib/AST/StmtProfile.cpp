@@ -1379,6 +1379,10 @@ void StmtProfiler::VisitMatrixSubscriptExpr(const MatrixSubscriptExpr *S) {
   VisitExpr(S);
 }
 
+void StmtProfiler::VisitTableSubscriptExpr(const TableSubscriptExpr *S) {
+  VisitExpr(S);
+}
+
 void StmtProfiler::VisitOMPArraySectionExpr(const OMPArraySectionExpr *S) {
   VisitExpr(S);
 }

@@ -3503,8 +3503,6 @@ class WasmTableType : public Type, public llvm::FoldingSetNode {
 
     WasmTableType(QualType ElementTy, QualType CanonElementTy);
 
-    WasmTableType(TypeClass TypeClass, QualType ElementTy, QualType CanonElementTy);
-
   public:
     /// Returns the type of the elements being stored in the table
     QualType getElementType() const { return ElementType; }

@@ -3558,6 +3558,7 @@ bool InitializationSequence::isAmbiguous() const {
   case FK_NonConstLValueReferenceBindingToBitfield:
   case FK_NonConstLValueReferenceBindingToVectorElement:
   case FK_NonConstLValueReferenceBindingToMatrixElement:
+  case FK_NonConstLValueReferenceBindingToTableElement:
   case FK_NonConstLValueReferenceBindingToUnrelated:
   case FK_RValueReferenceBindingToLValue:
   case FK_ReferenceAddrspaceMismatchTemporary:
@@ -4796,7 +4797,7 @@ static void TryReferenceInitialization(Sema &S,
 /// such a glvalue will always create a temporary.
 static bool isNonReferenceableGLValue(Expr *E) {
   return E->refersToBitField() || E->refersToVectorElement() ||
-         E->refersToMatrixElement();
+         E->refersToMatrixElement() || E->refersToTableElement();
 }
 
 /// Reference initialization without resolving overloaded functions.
@@ -4928,6 +4929,9 @@ static void TryReferenceInitializationCore(Sema &S,
         else if (Initializer->refersToMatrixElement())
           FK = InitializationSequence::
               FK_NonConstLValueReferenceBindingToMatrixElement;
+        else if (Initializer->refersToTableElement())
+          FK = InitializationSequence::
+              FK_NonConstLValueReferenceBindingToTableElement;
         else
           llvm_unreachable("unexpected kind of compatible initializer");
         break;
@@ -9235,6 +9239,11 @@ bool InitializationSequence::Diagnose(Sema &S,
 
   case FK_NonConstLValueReferenceBindingToMatrixElement:
     S.Diag(Kind.getLocation(), diag::err_reference_bind_to_matrix_element)
+        << DestType.isVolatileQualified() << Args[0]->getSourceRange();
+    break;
+
+  case FK_NonConstLValueReferenceBindingToTableElement:
+    S.Diag(Kind.getLocation(), diag::err_reference_bind_to_table_element)
         << DestType.isVolatileQualified() << Args[0]->getSourceRange();
     break;
 

@@ -3489,6 +3489,7 @@ void ItaniumRTTIBuilder::BuildVTablePointer(const Type *Ty) {
   // GCC treats vector and complex types as fundamental types.
   case Type::Vector:
   case Type::ExtVector:
+  case Type::WasmTable:
   case Type::ConstantMatrix:
   case Type::Complex:
   case Type::Atomic:

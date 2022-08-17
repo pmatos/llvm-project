@@ -5590,6 +5590,9 @@ public:
                                               Expr *ColumnIdx,
                                               SourceLocation RBLoc);
 
+  ExprResult CreateBuiltinTableSubscriptExpr(Expr *Base, Expr *Idx,
+                                             SourceLocation RBLoc);
+
   ExprResult ActOnOMPArraySectionExpr(Expr *Base, SourceLocation LBLoc,
                                       Expr *LowerBound,
                                       SourceLocation ColonLocFirst,

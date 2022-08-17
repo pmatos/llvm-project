@@ -175,7 +175,8 @@ class LValue {
     BitField,     // This is a bitfield l-value, use getBitfield*.
     ExtVectorElt, // This is an extended vector subset, use getExtVectorComp
     GlobalReg,    // This is a register l-value, use getGlobalReg()
-    MatrixElt     // This is a matrix element, use getVector*
+    MatrixElt,    // This is a matrix element, use getVector*
+    TableElt,     // This is a table element, use getTable*
   } LVType;
 
   llvm::Value *V;
@@ -268,6 +269,7 @@ public:
   bool isExtVectorElt() const { return LVType == ExtVectorElt; }
   bool isGlobalReg() const { return LVType == GlobalReg; }
   bool isMatrixElt() const { return LVType == MatrixElt; }
+  bool isTableElt() const { return LVType == TableElt; }
 
   bool isVolatileQualified() const { return Quals.hasVolatile(); }
   bool isRestrictQualified() const { return Quals.hasRestrict(); }
@@ -370,6 +372,19 @@ public:
   }
   llvm::Value *getMatrixIdx() const {
     assert(isMatrixElt());
+    return VectorIdx;
+  }
+
+  Address getTableAddress() const {
+    // FIXME: maybe this should not be possible.
+    return Address(getTablePointer(), ElementType, getAlignment());
+  }
+  llvm::Value *getTablePointer() const {
+    assert(isTableElt());
+    return V;
+  }
+  llvm::Value *getTableIdx() const {
+    assert(isTableElt());
     return VectorIdx;
   }
 
@@ -478,6 +493,19 @@ public:
     R.ElementType = matAddress.getElementType();
     R.VectorIdx = Idx;
     R.Initialize(type, type.getQualifiers(), matAddress.getAlignment(),
+                 BaseInfo, TBAAInfo);
+    return R;
+  }
+
+  static LValue MakeTableElt(Address tabAddress, llvm::Value *Idx,
+                             QualType type, LValueBaseInfo BaseInfo,
+                             TBAAAccessInfo TBAAInfo) {
+    LValue R;
+    R.LVType = TableElt;
+    R.V = tabAddress.getPointer();
+    R.ElementType = tabAddress.getElementType();
+    R.VectorIdx = Idx;
+    R.Initialize(type, type.getQualifiers(), tabAddress.getAlignment(),
                  BaseInfo, TBAAInfo);
     return R;
   }

@@ -2605,6 +2605,15 @@ public:
                                                       RBracketLoc);
   }
 
+  /// Build a new table subscript expression.
+  ///
+  /// By default, performs semantic analysis to build the new expression.
+  /// Subclasses may override this routine to provide different behavior.
+  ExprResult RebuildTableSubscriptExpr(Expr *Base, Expr *Idx,
+                                       SourceLocation RBracketLoc) {
+    return getSema().CreateBuiltinTableSubscriptExpr(Base, Idx, RBracketLoc);
+  }
+
   /// Build a new array section expression.
   ///
   /// By default, performs semantic analysis to build the new expression.
@@ -10940,6 +10949,25 @@ TreeTransform<Derived>::TransformMatrixSubscriptExpr(MatrixSubscriptExpr *E) {
 
   return getDerived().RebuildMatrixSubscriptExpr(
       Base.get(), RowIdx.get(), ColumnIdx.get(), E->getRBracketLoc());
+}
+
+template <typename Derived>
+ExprResult
+TreeTransform<Derived>::TransformTableSubscriptExpr(TableSubscriptExpr *E) {
+  ExprResult Base = getDerived().TransformExpr(E->getBase());
+  if (Base.isInvalid())
+    return ExprError();
+
+  ExprResult Idx = getDerived().TransformExpr(E->getIdx());
+  if (Idx.isInvalid())
+    return ExprError();
+
+  if (!getDerived().AlwaysRebuild() && Base.get() == E->getBase() &&
+      Idx.get() == E->getIdx())
+    return E;
+
+  return getDerived().RebuildTableSubscriptExpr(
+      Base.get(), Idx.get(), E->getRBracketLoc());
 }
 
 template <typename Derived>

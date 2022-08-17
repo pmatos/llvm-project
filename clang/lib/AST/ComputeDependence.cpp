@@ -121,6 +121,10 @@ ExprDependence clang::computeDependence(MatrixSubscriptExpr *E) {
                             : ExprDependence::None);
 }
 
+ExprDependence clang::computeDependence(TableSubscriptExpr *E) {
+  return E->getBase()->getDependence() | E->getIdx()->getDependence();
+}
+
 ExprDependence clang::computeDependence(CompoundLiteralExpr *E) {
   return toExprDependenceAsWritten(
              E->getTypeSourceInfo()->getType()->getDependence()) |

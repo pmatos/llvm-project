@@ -494,6 +494,11 @@ public:
     return getObjectKind() == OK_MatrixComponent;
   }
 
+  /// Returns whether this expression refers to a table element.
+  bool refersToTableElement() const {
+    return getObjectKind() == OK_TableComponent;
+  }
+
   /// Returns whether this expression refers to a global register
   /// variable.
   bool refersToGlobalRegisterVar() const;
@@ -2654,7 +2659,7 @@ public:
       : Expr(ArraySubscriptExprClass, t, VK, OK) {
     SubExprs[LHS] = lhs;
     SubExprs[RHS] = rhs;
-    ArrayOrMatrixSubscriptExprBits.RBracketLoc = rbracketloc;
+    AMTSubscriptExprBits.RBracketLoc = rbracketloc;
     setDependence(computeDependence(this));
   }
 
@@ -2691,10 +2696,10 @@ public:
   SourceLocation getEndLoc() const { return getRBracketLoc(); }
 
   SourceLocation getRBracketLoc() const {
-    return ArrayOrMatrixSubscriptExprBits.RBracketLoc;
+    return AMTSubscriptExprBits.RBracketLoc;
   }
   void setRBracketLoc(SourceLocation L) {
-    ArrayOrMatrixSubscriptExprBits.RBracketLoc = L;
+    AMTSubscriptExprBits.RBracketLoc = L;
   }
 
   SourceLocation getExprLoc() const LLVM_READONLY {
@@ -2708,6 +2713,63 @@ public:
   // Iterators
   child_range children() {
     return child_range(&SubExprs[0], &SubExprs[0]+END_EXPR);
+  }
+  const_child_range children() const {
+    return const_child_range(&SubExprs[0], &SubExprs[0] + END_EXPR);
+  }
+};
+
+/// TableSubscriptExpr - Table subscript expression for TableType.
+class TableSubscriptExpr : public Expr {
+  enum {BASE, IDX, END_EXPR};
+  Stmt *SubExprs[END_EXPR];
+
+public:
+  TableSubscriptExpr(Expr *Base, Expr *Idx, QualType T, SourceLocation RBracketLoc)
+    : Expr(TableSubscriptExprClass, T, Base->getValueKind(),
+           OK_TableComponent) {
+      SubExprs[BASE] = Base;
+      SubExprs[IDX] = Idx;
+      AMTSubscriptExprBits.RBracketLoc = RBracketLoc;
+      setDependence(computeDependence(this));
+  }
+
+  /// Create an empty table subscript expression.
+  explicit TableSubscriptExpr(EmptyShell Shell)
+    : Expr(TableSubscriptExprClass, Shell) { }
+
+  Expr *getBase() { return cast<Expr>(SubExprs[BASE]); }
+  const Expr *getBase() const { return cast<Expr>(SubExprs[BASE]); }
+  void setBase(Expr *E) { SubExprs[BASE] = E; }
+
+  Expr* getIdx() { return cast<Expr>(SubExprs[IDX]); }
+  const Expr *getIdx() const { return cast<Expr>(SubExprs[IDX]); }
+  void setIdx(Expr *E) { SubExprs[IDX] = E; }
+
+  SourceLocation getBeginLoc() const LLVM_READONLY {
+    return getBase()->getBeginLoc();
+  }
+
+  SourceLocation getEndLoc() const { return getRBracketLoc(); }
+
+  SourceLocation getExprLoc() const LLVM_READONLY {
+    return getBase()->getExprLoc();
+  }
+
+  SourceLocation getRBracketLoc() const {
+    return AMTSubscriptExprBits.RBracketLoc;
+  }
+  void setRBracketLoc(SourceLocation L) {
+    AMTSubscriptExprBits.RBracketLoc = L;
+  }
+
+  static bool classof(const Stmt *T) {
+    return T->getStmtClass() == MatrixSubscriptExprClass;
+  }
+
+  // Iterators
+  child_range children() {
+    return child_range(&SubExprs[0], &SubExprs[0] + END_EXPR);
   }
   const_child_range children() const {
     return const_child_range(&SubExprs[0], &SubExprs[0] + END_EXPR);
@@ -2732,7 +2794,7 @@ public:
     SubExprs[BASE] = Base;
     SubExprs[ROW_IDX] = RowIdx;
     SubExprs[COLUMN_IDX] = ColumnIdx;
-    ArrayOrMatrixSubscriptExprBits.RBracketLoc = RBracketLoc;
+    AMTSubscriptExprBits.RBracketLoc = RBracketLoc;
     setDependence(computeDependence(this));
   }
 
@@ -2773,10 +2835,10 @@ public:
   }
 
   SourceLocation getRBracketLoc() const {
-    return ArrayOrMatrixSubscriptExprBits.RBracketLoc;
+    return AMTSubscriptExprBits.RBracketLoc;
   }
   void setRBracketLoc(SourceLocation L) {
-    ArrayOrMatrixSubscriptExprBits.RBracketLoc = L;
+    AMTSubscriptExprBits.RBracketLoc = L;
   }
 
   static bool classof(const Stmt *T) {
