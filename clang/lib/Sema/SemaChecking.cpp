@@ -4530,6 +4530,8 @@ bool Sema::CheckWebAssemblyBuiltinFunctionCall(const TargetInfo &TI,
   switch (BuiltinID) {
   case WebAssembly::BI__builtin_wasm_ref_null_extern:
     return BuiltinWasmRefNullExtern(TheCall);
+  case WebAssembly::BI__builtin_wasm_ref_null_func:
+    return BuiltinWasmRefNullFunc(TheCall);
   }
 
   return false;
@@ -6557,6 +6559,32 @@ bool Sema::BuiltinWasmRefNullExtern(CallExpr *TheCall) {
     return true;
 
   TheCall->setType(Context.getExternrefType());
+
+  return false;
+}
+
+bool Sema::BuiltinWasmRefNullFunc(CallExpr *TheCall) {
+  if (TheCall->getNumArgs() != 0)
+    return true;
+
+  // The call we get looks like
+  // CallExpr
+  // `- ImplicitCastExpr
+  //   `- DeclRefExpr
+  //
+  // Therefore we need to change the types of the DeclRefExpr (stored in FDecl)
+  // and regenerate a straight up CallExpr on the modified FDecl.
+  // returning
+  // CallExpr
+  // `- FunctionDecl
+
+  // Prepare FDecl type
+  QualType Pointee = Context.getFunctionType(Context.VoidTy, {}, {});
+  QualType Type = Context.getPointerType(Pointee);
+  Pointee = Context.getAddrSpaceQualType(Pointee, LangAS::wasm_funcref);
+  Type = Context.getAttributedType(attr::WebAssemblyFuncref, Type,
+                                   Context.getPointerType(Pointee));
+  TheCall->setType(Type);
 
   return false;
 }

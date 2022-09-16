@@ -4815,6 +4815,8 @@ public:
 
   bool isMSTypeSpec() const;
 
+  bool isWebAssemblyFuncrefSpec() const;
+
   bool isCallingConv() const;
 
   llvm::Optional<NullabilityKind> getImmediateNullability() const;

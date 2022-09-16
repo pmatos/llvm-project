@@ -43,6 +43,7 @@ static const unsigned DirectXAddrSpaceMap[] = {
     0, // ptr64
     // Wasm address space values for this map are dummy
     10, // wasm_externref
+    20, // wasm_funcref
 };
 
 class LLVM_LIBRARY_VISIBILITY DirectXTargetInfo : public TargetInfo {

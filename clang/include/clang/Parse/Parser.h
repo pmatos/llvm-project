@@ -2841,6 +2841,7 @@ private:
                                   SourceLocation AttrNameLoc,
                                   ParsedAttributes &Attrs);
   void ParseMicrosoftTypeAttributes(ParsedAttributes &attrs);
+  void ParseWebAssemblyFuncrefTypeAttribute(ParsedAttributes &Attrs);
   void DiagnoseAndSkipExtendedMicrosoftTypeAttributes();
   SourceLocation SkipExtendedMicrosoftTypeAttributes();
   void ParseMicrosoftInheritanceClassAttributes(ParsedAttributes &attrs);

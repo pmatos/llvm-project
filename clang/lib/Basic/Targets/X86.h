@@ -46,6 +46,7 @@ static const unsigned X86AddrSpaceMap[] = {
     272, // ptr64
     // Wasm address space values for this map are dummy
     10, // wasm_externref,
+    20, // wasm_funcref
 };
 
 // X86 target abstract base class; x86-32 and x86-64 are very close, so

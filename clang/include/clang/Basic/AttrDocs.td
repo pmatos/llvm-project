@@ -6688,3 +6688,12 @@ The symbol used for ``thunk-extern`` is target specific:
 As such, this function attribute is currently only supported on X86 targets.
   }];
 }
+
+def WebAssemblyFuncrefDocs : Documentation {
+  let Category = DocCatFunction;
+  let Content = [{
+Clang supports the ``__funcref`` attribute for the WebAssembly target. 
+This attribute may be attached to a function pointer declaration, where it modifies 
+its underlying representation to be a WebAssembly ``funcref``.
+  }];
+}
