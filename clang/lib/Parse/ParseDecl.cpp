@@ -842,6 +842,15 @@ void Parser::ParseMicrosoftTypeAttributes(ParsedAttributes &attrs) {
   }
 }
 
+void Parser::ParseWebAssemblyFuncrefTypeAttribute(ParsedAttributes &attrs) {
+  if (Tok.is(tok::kw___funcref)) {
+    IdentifierInfo *AttrName = Tok.getIdentifierInfo();
+    SourceLocation AttrNameLoc = ConsumeToken();
+    attrs.addNew(AttrName, AttrNameLoc, nullptr, AttrNameLoc, nullptr, 0,
+                 ParsedAttr::AS_Keyword);
+  }
+}
+
 void Parser::DiagnoseAndSkipExtendedMicrosoftTypeAttributes() {
   SourceLocation StartLoc = Tok.getLocation();
   SourceLocation EndLoc = SkipExtendedMicrosoftTypeAttributes();
@@ -3740,6 +3749,10 @@ void Parser::ParseDeclarationSpecifiers(DeclSpec &DS,
       ParseMicrosoftTypeAttributes(DS.getAttributes());
       continue;
 
+    case tok::kw___funcref:
+      ParseWebAssemblyFuncrefTypeAttribute(DS.getAttributes());
+      continue;
+
     // Borland single token adornments.
     case tok::kw___pascal:
       ParseBorlandTypeAttributes(DS.getAttributes());
@@ -5287,6 +5300,8 @@ bool Parser::isTypeSpecifierQualifier() {
   case tok::kw___read_only:
   case tok::kw___read_write:
   case tok::kw___write_only:
+
+  case tok::kw___funcref:
     return true;
 
   case tok::kw_private:
@@ -5522,6 +5537,7 @@ bool Parser::isDeclarationSpecifier(bool DisambiguatingWithExpression) {
 #define GENERIC_IMAGE_TYPE(ImgType, Id) case tok::kw_##ImgType##_t:
 #include "clang/Basic/OpenCLImageTypes.def"
 
+  case tok::kw___funcref:
     return true;
 
   case tok::kw_private:
@@ -5773,6 +5789,14 @@ void Parser::ParseTypeQualifierListOpt(
         continue;
       }
       goto DoneWithTypeQuals;
+
+    case tok::kw___funcref:
+      if (AttrReqs & AR_DeclspecAttributesParsed) {
+        ParseWebAssemblyFuncrefTypeAttribute(DS.getAttributes());
+        continue;
+      }
+      goto DoneWithTypeQuals;
+
     case tok::kw___pascal:
       if (AttrReqs & AR_VendorAttributesParsed) {
         ParseBorlandTypeAttributes(DS.getAttributes());

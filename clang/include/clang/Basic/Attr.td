@@ -4114,3 +4114,9 @@ def FunctionReturnThunks : InheritableAttr,
   let Subjects = SubjectList<[Function]>;
   let Documentation = [FunctionReturnThunksDocs];
 }
+
+def WebAssemblyFuncref : TypeAttr, TargetSpecificAttr<TargetWebAssembly> {
+  let Spellings = [Keyword<"__funcref">];
+  let Documentation = [WebAssemblyExportNameDocs];
+  let Subjects = SubjectList<[TypedefName], ErrorDiag>;
+}
