@@ -42,7 +42,9 @@ static const unsigned NVPTXAddrSpaceMap[] = {
     0, // sycl_private
     0, // ptr32_sptr
     0, // ptr32_uptr
-    0  // ptr64
+    0, // ptr64
+    // Wasm address space values for this map are dummy
+    10, // wasm_externref
 };
 
 /// The DWARF address class. Taken from
