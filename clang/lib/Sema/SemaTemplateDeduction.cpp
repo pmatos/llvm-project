@@ -2047,6 +2047,7 @@ static Sema::TemplateDeductionResult DeduceTemplateArgumentsByTypeMatch(
     //     T __attribute__((wasm_table))
     case Type::WasmTable: {
       assert("Template deduction not available yet for Table types");
+      LLVM_FALLTHROUGH;
     }
 
     //     (clang extension)

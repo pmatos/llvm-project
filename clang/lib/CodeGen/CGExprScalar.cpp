@@ -1840,7 +1840,7 @@ Value *ScalarExprEmitter::VisitTableSubscriptExpr(TableSubscriptExpr *E) {
   // integer value.
   Value *Idx = Visit(E->getIdx());
 
-  const auto *TableTy = E->getBase()->getType()->castAs<WasmTableType>();
+  //const auto *TableTy = E->getBase()->getType()->castAs<WasmTableType>();
   //unsigned NumElements = TableTy->getNumElements();
   //llvm::TableBuilder MB(Builder);
   //Value *Idx = MB.CreateIndex(Idx, NumElements);

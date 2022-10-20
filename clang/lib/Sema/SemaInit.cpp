@@ -9610,6 +9610,10 @@ void InitializationSequence::dump(raw_ostream &OS) const {
       OS << "non-const lvalue reference bound to matrix element";
       break;
 
+    case FK_NonConstLValueReferenceBindingToTableElement:
+      OS << "non-const lvalue reference bound to table element";
+      break;
+
     case FK_NonConstLValueReferenceBindingToUnrelated:
       OS << "non-const lvalue reference bound to unrelated type";
       break;

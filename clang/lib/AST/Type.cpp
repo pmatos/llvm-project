@@ -2340,12 +2340,18 @@ bool Type::isSizelessBuiltinType() const {
 }
 
 bool Type::isWebAssemblyReferenceType() const {
-  return isWebAssemblyExternrefType();
+  return isWebAssemblyExternrefType() || isWebAssemblyFuncrefType();
 }
 
 bool Type::isWebAssemblyExternrefType() const {
   if (const auto *BT = getAs<BuiltinType>())
     return BT->getKind() == BuiltinType::WasmExternRef;
+  return false;
+}
+
+bool Type::isWebAssemblyFuncrefType() const {
+  if (const auto *AT = getAs<AttributedType>())
+    return AT->isWebAssemblyFuncrefSpec();
   return false;
 }
 
