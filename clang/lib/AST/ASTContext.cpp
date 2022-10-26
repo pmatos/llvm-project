@@ -955,6 +955,8 @@ static const LangASMap *getAddressSpaceMap(const TargetInfo &T,
         11, // ptr32_uptr
         12, // ptr64
         13, // hlsl_groupshared
+        // Wasm address space values for this map are dummy
+        20, // wasm_funcref
     };
     return &FakeAddrSpaceMap;
   } else {
