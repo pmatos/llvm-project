@@ -30,6 +30,7 @@
 #include "clang/Basic/HLSLRuntime.h"
 #include "clang/Basic/PartialDiagnostic.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/Basic/Specifiers.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Lex/HeaderSearch.h" // TODO: Sema shouldn't depend on Lex
 #include "clang/Lex/Lexer.h" // TODO: Extract static functions to fix layering.
@@ -8732,16 +8733,17 @@ void Sema::CheckVariableDeclarationType(VarDecl *NewVD) {
     }
   }
 
-  // WebAssembly tables must be static with a zero length and can't be
-  // declared within functions.
+  // WebAssembly tables must be static (or extern if imported) with a zero length
+  // and can't be declared within functions.
   if (T->isWebAssemblyTableType()) {
     if (getCurScope()->getParent()) { // Parent is null at top-level
       Diag(NewVD->getLocation(), diag::err_wasm_table_in_function);
       NewVD->setInvalidDecl();
       return;
     }
-    if (NewVD->getStorageClass() != SC_Static) {
-      Diag(NewVD->getLocation(), diag::err_wasm_table_must_be_static);
+    if (NewVD->getStorageClass() != SC_Static 
+        && NewVD->getStorageClass() != SC_Extern) {
+      Diag(NewVD->getLocation(), diag::err_wasm_table_must_be_static_or_extern);
       NewVD->setInvalidDecl();
       return;
     }

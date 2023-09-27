@@ -11972,8 +11972,8 @@ def err_wasm_reftype_tc : Error<
   "cannot %select{throw|catch}0 a WebAssembly reference type">;
 def err_wasm_reftype_exception_spec : Error<
   "WebAssembly reference type not allowed in exception specification">;
-def err_wasm_table_must_be_static : Error<
-  "WebAssembly table must be static">;
+def err_wasm_table_must_be_static_or_extern : Error<
+  "WebAssembly table must be static or extern">;
 def err_wasm_reftype_multidimensional_array : Error<
   "multi-dimensional arrays of WebAssembly references are not allowed">;
 def err_wasm_builtin_arg_must_be_table_type : Error <

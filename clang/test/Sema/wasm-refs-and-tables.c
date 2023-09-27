@@ -15,11 +15,12 @@ __externref_t ******t3;          // expected-error {{pointer to WebAssembly refe
 static __externref_t t4[3];      // expected-error {{only zero-length WebAssembly tables are currently supported}}
 static __externref_t t5[];       // expected-error {{only zero-length WebAssembly tables are currently supported}}
 static __externref_t t6[] = {0}; // expected-error {{only zero-length WebAssembly tables are currently supported}}
-__externref_t t7[0];             // expected-error {{WebAssembly table must be static}}
+__externref_t t7[0];             // expected-error {{WebAssembly table must be static or extern}}
 static __externref_t t8[0][0];   // expected-error {{multi-dimensional arrays of WebAssembly references are not allowed}}
 static __externref_t (*t9)[0];   // expected-error {{cannot form a pointer to a WebAssembly table}}
 
 static __externref_t table[0];
+extern __externref_t imported_table[0];
 static __externref_t other_table[0] = {};
 static __externref_t another_table[] = {}; // expected-error {{only zero-length WebAssembly tables are currently supported}}
 
