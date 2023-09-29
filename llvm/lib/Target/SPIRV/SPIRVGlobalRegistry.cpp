@@ -20,6 +20,7 @@
 #include "SPIRVSubtarget.h"
 #include "SPIRVTargetMachine.h"
 #include "SPIRVUtils.h"
+#include "llvm/Support/ErrorHandling.h"
 
 using namespace llvm;
 SPIRVGlobalRegistry::SPIRVGlobalRegistry(unsigned PointerSize)
@@ -597,7 +598,7 @@ SPIRVType *SPIRVGlobalRegistry::getOrCreateSpecialType(
   // Some OpenCL and SPIRV builtins like image2d_t are passed in as
   // pointers, but should be treated as custom types like OpTypeImage.
   if (auto PType = dyn_cast<PointerType>(Ty)) {
-    assert(!PType->isOpaque());
+    llvm_unreachable("[SPIRV] Cannot call getNonOpaquePointerElementType");
     Ty = PType->getNonOpaquePointerElementType();
   }
   assert(isSpecialOpaqueType(Ty) && "Not a special opaque builtin type");
@@ -713,12 +714,14 @@ SPIRVType *SPIRVGlobalRegistry::createSPIRVType(
     // At the moment, all opaque pointers correspond to i8 element type.
     // TODO: change the implementation once opaque pointers are supported
     // in the SPIR-V specification.
-    if (PType->isOpaque())
+    if (true)
       SpvElementType = getOrCreateSPIRVIntegerType(8, MIRBuilder);
-    else
+    else {
+      llvm_unreachable("[SPIRV] Cannot call getNonOpaquePointerElementType");
       SpvElementType =
           findSPIRVType(PType->getNonOpaquePointerElementType(), MIRBuilder,
                         SPIRV::AccessQualifier::ReadWrite, EmitIR);
+    }
     auto SC = addressSpaceToStorageClass(PType->getAddressSpace());
     // Null pointer means we have a loop in type definitions, make and
     // return corresponding OpTypeForwardPointer.
@@ -755,13 +758,15 @@ SPIRVType *SPIRVGlobalRegistry::restOfCreateSPIRVType(
       !isSpecialOpaqueType(Ty)) {
     if (!Ty->isPointerTy())
       DT.add(Ty, &MIRBuilder.getMF(), getSPIRVTypeID(SpirvType));
-    else if (Ty->isOpaquePointerTy())
+    else if (Ty->isPointerTy())
       DT.add(Type::getInt8Ty(MIRBuilder.getMF().getFunction().getContext()),
              Ty->getPointerAddressSpace(), &MIRBuilder.getMF(),
              getSPIRVTypeID(SpirvType));
-    else
+    else {
+      llvm_unreachable("[SPIRV] Cannot call getNonOpaquePointerElementType");
       DT.add(Ty->getNonOpaquePointerElementType(), Ty->getPointerAddressSpace(),
              &MIRBuilder.getMF(), getSPIRVTypeID(SpirvType));
+    }
   }
 
   return SpirvType;

@@ -325,9 +325,10 @@ std::string getOclOrSpirvBuiltinDemangledName(StringRef Name) {
   return Name.substr(Start, Len).str();
 }
 
+[[deprecated("[SPIRV] Pointers no longer have element types")]]
 const Type *getTypedPtrEltType(const Type *Ty) {
   auto PType = dyn_cast<PointerType>(Ty);
-  if (!PType || PType->isOpaque())
+  if (!PType)
     return Ty;
   return PType->getNonOpaquePointerElementType();
 }
