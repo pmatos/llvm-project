@@ -2791,9 +2791,13 @@ llvm::Constant *ConstantEmitter::emitNullForMemory(CodeGenModule &CGM,
 }
 
 llvm::Constant *CodeGenModule::EmitNullConstant(QualType T) {
-  if (T->getAs<PointerType>())
-    return getNullPointer(
-        cast<llvm::PointerType>(getTypes().ConvertTypeForMem(T)), T);
+  if (T->getAs<PointerType>()) {
+    llvm::Type *Ty = getTypes().ConvertTypeForMem(T);
+    if (auto *PT = dyn_cast<llvm::PointerType>(Ty))
+      return getNullPointer(PT, T);
+    // WebAssembly funcref maps to a TargetExtType, not an llvm::PointerType.
+    return llvm::Constant::getNullValue(Ty);
+  }
 
   if (getTypes().isZeroInitializable(T))
     return llvm::Constant::getNullValue(getTypes().ConvertTypeForMem(T));

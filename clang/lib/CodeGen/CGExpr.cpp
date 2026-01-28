@@ -44,6 +44,7 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/IntrinsicsWebAssembly.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/MDBuilder.h"
 #include "llvm/IR/MatrixBuilder.h"
@@ -6556,7 +6557,15 @@ CGCallee CodeGenFunction::EmitCallee(const Expr *E) {
           GD = GlobalDecl(VD);
         }
         CGCalleeInfo CalleeInfo(FunctionType->getAs<FunctionProtoType>(), GD);
-        CGCallee Callee(CalleeInfo, Result.first, Result.second);
+        // If the loaded value is a WebAssembly funcref (TargetExtType),
+        // convert it to a callable pointer via funcref.to.ptr.
+        llvm::Value *CalleePtr = Result.first;
+        if (isa<llvm::TargetExtType>(CalleePtr->getType())) {
+          llvm::Function *FuncrefToPtr =
+              CGM.getIntrinsic(llvm::Intrinsic::wasm_funcref_to_ptr);
+          CalleePtr = Builder.CreateCall(FuncrefToPtr, {CalleePtr});
+        }
+        CGCallee Callee(CalleeInfo, CalleePtr, Result.second);
         return Callee;
       }
     }
@@ -6592,6 +6601,14 @@ CGCallee CodeGenFunction::EmitCallee(const Expr *E) {
     calleePtr = EmitLValue(E, KnownNonNull).getPointer(*this);
   }
   assert(functionType->isFunctionType());
+
+  // If the callee is a WebAssembly funcref (TargetExtType), convert it to a
+  // callable pointer via the funcref.to.ptr intrinsic.
+  if (isa<llvm::TargetExtType>(calleePtr->getType())) {
+    llvm::Function *FuncrefToPtr =
+        CGM.getIntrinsic(llvm::Intrinsic::wasm_funcref_to_ptr);
+    calleePtr = Builder.CreateCall(FuncrefToPtr, {calleePtr});
+  }
 
   GlobalDecl GD;
   if (const auto *VD =

@@ -154,7 +154,7 @@ define void @test_reference_types(ptr noundef %func) local_unnamed_addr #0 {
 ; CHECK-NEXT:    call use
 ; CHECK-NEXT:    # fallthrough-return
 entry:
-  %res = tail call i32 (ptr, ...) @llvm.wasm.ref.test.func(ptr %func, ptr addrspace(10) poison, token poison, ptr addrspace(20) poison, ptr addrspace(10) poison)
+  %res = tail call i32 (ptr, ...) @llvm.wasm.ref.test.func(ptr %func, target("wasm.externref") poison, token poison, target("wasm.funcref") poison, target("wasm.externref") poison)
   tail call void @use(i32 noundef %res) #3
   ret void
 }

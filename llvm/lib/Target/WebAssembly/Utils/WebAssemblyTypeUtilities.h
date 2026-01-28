@@ -16,7 +16,6 @@
 #define LLVM_LIB_TARGET_WEBASSEMBLY_UTILS_WEBASSEMBLYTYPEUTILITIES_H
 
 #include "MCTargetDesc/WebAssemblyMCTypeUtilities.h"
-#include "WasmAddressSpaces.h"
 #include "llvm/BinaryFormat/Wasm.h"
 #include "llvm/CodeGenTypes/MachineValueType.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -28,16 +27,16 @@ namespace WebAssembly {
 
 /// Return true if this is a WebAssembly Externref Type.
 inline bool isWebAssemblyExternrefType(const Type *Ty) {
-  return Ty->isPointerTy() &&
-         Ty->getPointerAddressSpace() ==
-             WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_EXTERNREF;
+  if (auto *TET = dyn_cast<TargetExtType>(Ty))
+    return TET->getName() == "wasm.externref";
+  return false;
 }
 
 /// Return true if this is a WebAssembly Funcref Type.
 inline bool isWebAssemblyFuncrefType(const Type *Ty) {
-  return Ty->isPointerTy() &&
-         Ty->getPointerAddressSpace() ==
-             WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_FUNCREF;
+  if (auto *TET = dyn_cast<TargetExtType>(Ty))
+    return TET->getName() == "wasm.funcref";
+  return false;
 }
 
 /// Return true if this is a WebAssembly Reference Type.

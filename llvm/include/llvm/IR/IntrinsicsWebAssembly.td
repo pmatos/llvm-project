@@ -47,6 +47,11 @@ def int_wasm_ref_test_func
     : DefaultAttrsIntrinsic<[llvm_i32_ty], [llvm_ptr_ty, llvm_vararg_ty],
                             [IntrNoMem]>;
 
+// Convert funcref to pointer for indirect calls.
+// This is lowered to a no-op (just type change) in the backend.
+def int_wasm_funcref_to_ptr :
+  DefaultAttrsIntrinsic<[llvm_ptr_ty], [llvm_funcref_ty], [IntrNoMem]>;
+
 //===----------------------------------------------------------------------===//
 // Table intrinsics
 //===----------------------------------------------------------------------===//

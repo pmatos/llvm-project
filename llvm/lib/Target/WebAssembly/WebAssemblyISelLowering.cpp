@@ -13,6 +13,7 @@
 
 #include "WebAssemblyISelLowering.h"
 #include "MCTargetDesc/WebAssemblyMCTargetDesc.h"
+#include "Utils/WasmAddressSpaces.h"
 #include "Utils/WebAssemblyTypeUtilities.h"
 #include "WebAssemblyMachineFunctionInfo.h"
 #include "WebAssemblySubtarget.h"
@@ -429,23 +430,6 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
   setMinimumJumpTableEntries(2);
 }
 
-MVT WebAssemblyTargetLowering::getPointerTy(const DataLayout &DL,
-                                            uint32_t AS) const {
-  if (AS == WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_EXTERNREF)
-    return MVT::externref;
-  if (AS == WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_FUNCREF)
-    return MVT::funcref;
-  return TargetLowering::getPointerTy(DL, AS);
-}
-
-MVT WebAssemblyTargetLowering::getPointerMemTy(const DataLayout &DL,
-                                               uint32_t AS) const {
-  if (AS == WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_EXTERNREF)
-    return MVT::externref;
-  if (AS == WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_FUNCREF)
-    return MVT::funcref;
-  return TargetLowering::getPointerMemTy(DL, AS);
-}
 
 TargetLowering::AtomicExpansionKind
 WebAssemblyTargetLowering::shouldExpandAtomicRMWInIR(
@@ -1516,8 +1500,21 @@ WebAssemblyTargetLowering::LowerCall(CallLoweringInfo &CLI,
 
   // Lastly, if this is a call to a funcref we need to add an instruction
   // table.set to the chain and transform the call.
-  if (CLI.CB && WebAssembly::isWebAssemblyFuncrefType(
-                    CLI.CB->getCalledOperand()->getType())) {
+  // Look through llvm.wasm.funcref.to.ptr intrinsic calls to find the original
+  // funcref type.
+  auto getOriginalFuncrefType = [](const Value *V) -> Type * {
+    if (auto *Call = dyn_cast<CallInst>(V)) {
+      if (auto *Callee = Call->getCalledFunction()) {
+        if (Callee->getIntrinsicID() == Intrinsic::wasm_funcref_to_ptr)
+          return Call->getArgOperand(0)->getType();
+      }
+    }
+    return V->getType();
+  };
+
+  Type *CalledType =
+      CLI.CB ? getOriginalFuncrefType(CLI.CB->getCalledOperand()) : nullptr;
+  if (CalledType && WebAssembly::isWebAssemblyFuncrefType(CalledType)) {
     // In the absence of function references proposal where a funcref call is
     // lowered to call_ref, using reference types we generate a table.set to set
     // the funcref to a special table used solely for this purpose, followed by
@@ -1526,21 +1523,31 @@ WebAssemblyTargetLowering::LowerCall(CallLoweringInfo &CLI,
     // generating the call_indirect.
     SDValue Chain = Ops[0];
 
+    // Extract the original funcref value from the funcref_to_ptr intrinsic.
+    // The callee is the intrinsic result (ptr type), but we need the funcref
+    // argument for TABLE_SET.
+    SDValue FuncrefVal = Callee;
+    if (Callee.getOpcode() == ISD::INTRINSIC_WO_CHAIN) {
+      unsigned IntNo = Callee.getConstantOperandVal(0);
+      if (IntNo == Intrinsic::wasm_funcref_to_ptr)
+        FuncrefVal = Callee.getOperand(1);
+    }
+
     MCSymbolWasm *Table = WebAssembly::getOrCreateFuncrefCallTableSymbol(
         MF.getContext(), Subtarget);
     SDValue Sym = DAG.getMCSymbol(Table, PtrVT);
     SDValue TableSlot = DAG.getConstant(0, DL, MVT::i32);
-    SDValue TableSetOps[] = {Chain, Sym, TableSlot, Callee};
+    SDValue TableSetOps[] = {Chain, Sym, TableSlot, FuncrefVal};
     SDValue TableSet = DAG.getMemIntrinsicNode(
         WebAssemblyISD::TABLE_SET, DL, DAG.getVTList(MVT::Other), TableSetOps,
-        MVT::funcref,
-        // Machine Mem Operand args
-        MachinePointerInfo(
-            WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_FUNCREF),
+        MVT::funcref, MachinePointerInfo(),
         CLI.CB->getCalledOperand()->getPointerAlignment(DAG.getDataLayout()),
         MachineMemOperand::MOStore);
 
     Ops[0] = TableSet; // The new chain is the TableSet itself
+    // Replace callee with funcref value so it gets assigned to FUNCREFRegClass,
+    // which is needed for LowerCallResults to detect this as a funcref call.
+    Ops[1] = FuncrefVal;
   }
 
   if (CLI.IsTailCall) {
@@ -2257,6 +2264,16 @@ SDValue WebAssemblyTargetLowering::LowerIntrinsic(SDValue Op,
         DAG.getMachineNode(GlobalGet, DL, PtrVT,
                            DAG.getTargetExternalSymbol(TlsBase, PtrVT)),
         0);
+  }
+
+  case Intrinsic::wasm_funcref_to_ptr: {
+    // This intrinsic converts funcref to pointer for use as a call callee.
+    // LowerCall handles funcref calls by looking through this intrinsic and
+    // using the funcref operand directly for proper register class assignment.
+    // The intrinsic result (ptr type) is not actually used for funcref calls,
+    // so we return UNDEF here. The funcref value is extracted in LowerCall.
+    SDLoc DL(Op);
+    return DAG.getUNDEF(Op.getValueType());
   }
   }
 }

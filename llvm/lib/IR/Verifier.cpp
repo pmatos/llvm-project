@@ -3859,9 +3859,17 @@ void Verifier::visitPHINode(PHINode &PN) {
   visitInstruction(PN);
 }
 
+static bool isCallableType(Type *Ty) {
+  if (Ty->isPointerTy())
+    return true;
+  if (auto *TET = dyn_cast<TargetExtType>(Ty))
+    return TET->hasProperty(TargetExtType::CanBeCallee);
+  return false;
+}
+
 void Verifier::visitCallBase(CallBase &Call) {
-  Check(Call.getCalledOperand()->getType()->isPointerTy(),
-        "Called function must be a pointer!", Call);
+  Check(isCallableType(Call.getCalledOperand()->getType()),
+        "Called function must be a pointer or callable target type!", Call);
   FunctionType *FTy = Call.getFunctionType();
 
   // Verify that the correct number of arguments are being passed

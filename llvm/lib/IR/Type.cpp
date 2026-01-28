@@ -338,13 +338,11 @@ Type *Type::getByteFromIntType(Type *Ty) {
 }
 
 Type *Type::getWasm_ExternrefTy(LLVMContext &C) {
-  // opaque pointer in addrspace(10)
-  return PointerType::get(C, 10);
+  return TargetExtType::get(C, "wasm.externref");
 }
 
 Type *Type::getWasm_FuncrefTy(LLVMContext &C) {
-  // opaque pointer in addrspace(20)
-  return PointerType::get(C, 20);
+  return TargetExtType::get(C, "wasm.funcref");
 }
 
 //===----------------------------------------------------------------------===//
@@ -1092,6 +1090,15 @@ static TargetTypeInfo getTargetTypeInfo(const TargetExtType *Ty) {
     return TargetTypeInfo(ScalableVectorType::get(Type::getInt1Ty(C), 16),
                           TargetExtType::HasZeroInit,
                           TargetExtType::CanBeLocal);
+
+  // Opaque types in the WebAssembly name space.
+  if (Name == "wasm.externref")
+    return TargetTypeInfo(PointerType::get(C, 0), TargetExtType::HasZeroInit,
+                          TargetExtType::CanBeGlobal, TargetExtType::CanBeLocal);
+  if (Name == "wasm.funcref")
+    return TargetTypeInfo(PointerType::get(C, 0), TargetExtType::HasZeroInit,
+                          TargetExtType::CanBeGlobal, TargetExtType::CanBeLocal,
+                          TargetExtType::CanBeCallee);
 
   // RISC-V vector tuple type. The layout is represented as the type that needs
   // the same number of vector registers(VREGS) as this tuple type, represented

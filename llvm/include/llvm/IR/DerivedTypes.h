@@ -896,6 +896,8 @@ public:
     // This type can only be used in intrinsic arguments and return values.
     /// In particular, it cannot be used in select and phi instructions.
     IsTokenLike = 1U << 4,
+    /// This type may be used as a callee in a call instruction.
+    CanBeCallee = 1U << 5,
   };
 
   /// Returns true if the target extension type contains the given property.

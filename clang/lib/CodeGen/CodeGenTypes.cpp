@@ -638,8 +638,14 @@ llvm::Type *CodeGenTypes::ConvertType(QualType T) {
   case Type::Pointer: {
     const PointerType *PTy = cast<PointerType>(Ty);
     QualType ETy = PTy->getPointeeType();
-    unsigned AS = getTargetAddressSpace(ETy);
-    ResultType = llvm::PointerType::get(getLLVMContext(), AS);
+    if (ETy.getAddressSpace() == LangAS::wasm_funcref) {
+      ResultType = CGM.getTargetCodeGenInfo().getWasmFuncrefReferenceType();
+      assert(ResultType &&
+             "wasm_funcref address space used without WebAssembly target");
+    } else {
+      unsigned AS = getTargetAddressSpace(ETy);
+      ResultType = llvm::PointerType::get(getLLVMContext(), AS);
+    }
     break;
   }
 

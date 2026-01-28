@@ -46,6 +46,7 @@
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicsPowerPC.h"
+#include "llvm/IR/IntrinsicsWebAssembly.h"
 #include "llvm/IR/MatrixBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Support/TypeSize.h"
@@ -2662,6 +2663,11 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
     llvm::Type *SrcTy = Src->getType();
     llvm::Type *DstTy = ConvertType(DestTy);
 
+    // All funcref types map to the same target("wasm.funcref") TargetExtType,
+    // so bitcasts between different funcref signatures are identity.
+    if (SrcTy == DstTy && isa<llvm::TargetExtType>(SrcTy))
+      return Src;
+
     // FIXME: this is a gross but seemingly necessary workaround for an issue
     // manifesting when a target uses a non-default AS for indirect sret args,
     // but the source HLL is generic, wherein a valid C-cast or reinterpret_cast
@@ -2819,6 +2825,31 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
     return CGF.authPointerToPointerCast(Result, E->getType(), DestTy);
   }
   case CK_AddressSpaceConversion: {
+    llvm::Type *DstTy = ConvertType(DestTy);
+
+    // Handle conversion to WebAssembly funcref TargetExtType.
+    if (auto *TET = dyn_cast<llvm::TargetExtType>(DstTy)) {
+      Expr::EvalResult Result;
+      if (E->EvaluateAsRValue(Result, CGF.getContext()) &&
+          Result.Val.isNullPointer()) {
+        if (Result.HasSideEffects)
+          Visit(E);
+        // Emit ref.null.func intrinsic for null funcref.
+        llvm::Function *NullFunc =
+            CGF.CGM.getIntrinsic(llvm::Intrinsic::wasm_ref_null_func);
+        return Builder.CreateCall(NullFunc);
+      }
+      // Non-null: this is casting a regular function pointer to funcref.
+      // WebAssembly has no instruction to convert a pointer to funcref directly.
+      // We emit a store/load type pun through memory, which the backend's
+      // WebAssemblyRefTypeMem2Local pass will convert to local.set/get.
+      llvm::Value *Src = Visit(E);
+      Address Tmp = CGF.CreateTempAlloca(TET, CharUnits::fromQuantity(4),
+                                         "funcref.convert");
+      Builder.CreateStore(Src, Tmp.withElementType(Src->getType()));
+      return Builder.CreateLoad(Tmp);
+    }
+
     Expr::EvalResult Result;
     if (E->EvaluateAsRValue(Result, CGF.getContext()) &&
         Result.Val.isNullPointer()) {
@@ -2827,12 +2858,11 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
       // eliminate the useless instructions emitted during translating E.
       if (Result.HasSideEffects)
         Visit(E);
-      return CGF.CGM.getNullPointer(cast<llvm::PointerType>(
-          ConvertType(DestTy)), DestTy);
+      return CGF.CGM.getNullPointer(cast<llvm::PointerType>(DstTy), DestTy);
     }
     // Since target may map different address spaces in AST to the same address
     // space, an address space conversion may end up as a bitcast.
-    return CGF.performAddrSpaceCast(Visit(E), ConvertType(DestTy));
+    return CGF.performAddrSpaceCast(Visit(E), DstTy);
   }
   case CK_AtomicToNonAtomic:
   case CK_NonAtomicToAtomic:
