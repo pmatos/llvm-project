@@ -1536,14 +1536,20 @@ WebAssemblyTargetLowering::LowerCall(CallLoweringInfo &CLI,
       // When falling back from FastISel, the callee may be a CopyFromReg(i32)
       // instead of INTRINSIC_WO_CHAIN. Look through the IR to find the
       // funcref argument and import it with the correct type.
+      // Note: this lookup succeeds when the funcref source is a function
+      // argument (the common case), since arguments are always in the
+      // ValueMap after LowerArguments. For non-argument sources (e.g.,
+      // table.get), the value may not be in the map if FastISel hasn't
+      // processed it yet; in that case FuncrefVal remains the original
+      // Callee and selection will fail, which is the expected FastISel
+      // fallback behavior.
       if (auto *CI = dyn_cast<CallInst>(CLI.CB->getCalledOperand())) {
         if (auto *CalledF = CI->getCalledFunction()) {
           if (CalledF->getIntrinsicID() == Intrinsic::wasm_funcref_to_ptr) {
             const Value *FuncrefArg = CI->getArgOperand(0);
-            auto &FuncInfo = DAG.getFunctionLoweringInfo();
-            auto It = FuncInfo.ValueMap.find(FuncrefArg);
-            if (It != FuncInfo.ValueMap.end())
-              FuncrefVal = DAG.getCopyFromReg(Chain, DL, It->second,
+            Register FuncrefReg = DAG.getRegForValue(FuncrefArg);
+            if (FuncrefReg)
+              FuncrefVal = DAG.getCopyFromReg(Chain, DL, FuncrefReg,
                                               MVT::funcref);
           }
         }

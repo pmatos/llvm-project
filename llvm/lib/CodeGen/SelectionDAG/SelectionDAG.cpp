@@ -1478,6 +1478,13 @@ SDNode *SelectionDAG::FindNodeOrInsertPos(const FoldingSetNodeID &ID,
   return N;
 }
 
+Register SelectionDAG::getRegForValue(const Value *V) const {
+  if (!FLI)
+    return Register();
+  auto It = FLI->ValueMap.find(V);
+  return It != FLI->ValueMap.end() ? It->second : Register();
+}
+
 void SelectionDAG::clear() {
   allnodes_clear();
   OperandRecycler.clear(OperandAllocator);
