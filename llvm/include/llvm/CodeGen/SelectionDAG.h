@@ -499,6 +499,10 @@ public:
   void setFunctionLoweringInfo(FunctionLoweringInfo * FuncInfo) {
     FLI = FuncInfo;
   }
+  FunctionLoweringInfo &getFunctionLoweringInfo() const {
+    assert(FLI && "FunctionLoweringInfo not set");
+    return *FLI;
+  }
 
   /// Clear state and free memory necessary to make this
   /// SelectionDAG ready to process a new block.

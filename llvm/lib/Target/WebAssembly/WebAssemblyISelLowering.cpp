@@ -20,6 +20,7 @@
 #include "WebAssemblyTargetMachine.h"
 #include "WebAssemblyUtilities.h"
 #include "llvm/CodeGen/CallingConvLower.h"
+#include "llvm/CodeGen/FunctionLoweringInfo.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineJumpTableInfo.h"
@@ -1531,6 +1532,22 @@ WebAssemblyTargetLowering::LowerCall(CallLoweringInfo &CLI,
       unsigned IntNo = Callee.getConstantOperandVal(0);
       if (IntNo == Intrinsic::wasm_funcref_to_ptr)
         FuncrefVal = Callee.getOperand(1);
+    } else if (CLI.CB) {
+      // When falling back from FastISel, the callee may be a CopyFromReg(i32)
+      // instead of INTRINSIC_WO_CHAIN. Look through the IR to find the
+      // funcref argument and import it with the correct type.
+      if (auto *CI = dyn_cast<CallInst>(CLI.CB->getCalledOperand())) {
+        if (auto *CalledF = CI->getCalledFunction()) {
+          if (CalledF->getIntrinsicID() == Intrinsic::wasm_funcref_to_ptr) {
+            const Value *FuncrefArg = CI->getArgOperand(0);
+            auto &FuncInfo = DAG.getFunctionLoweringInfo();
+            auto It = FuncInfo.ValueMap.find(FuncrefArg);
+            if (It != FuncInfo.ValueMap.end())
+              FuncrefVal = DAG.getCopyFromReg(Chain, DL, It->second,
+                                              MVT::funcref);
+          }
+        }
+      }
     }
 
     MCSymbolWasm *Table = WebAssembly::getOrCreateFuncrefCallTableSymbol(

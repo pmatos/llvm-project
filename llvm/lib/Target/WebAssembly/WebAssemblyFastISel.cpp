@@ -30,6 +30,7 @@
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/IR/DataLayout.h"
+#include "llvm/IR/IntrinsicsWebAssembly.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GetElementPtrTypeIterator.h"
@@ -722,6 +723,13 @@ bool WebAssemblyFastISel::fastLowerArguments() {
   if (FuncInfo.Fn->getCallingConv() == CallingConv::Swift)
     return false;
 
+  // Bail out for reference type arguments. FastISel can lower them but if any
+  // instruction in the block fails and falls back to DAG ISel, the argument
+  // import will use the wrong type (i32 instead of funcref/externref).
+  for (auto const &Arg : F->args())
+    if (WebAssembly::isWebAssemblyReferenceType(Arg.getType()))
+      return false;
+
   unsigned I = 0;
   for (auto const &Arg : F->args()) {
     const AttributeList &Attrs = F->getAttributes();
@@ -835,10 +843,18 @@ bool WebAssemblyFastISel::fastLowerArguments() {
 bool WebAssemblyFastISel::selectCall(const Instruction *I) {
   const auto *Call = cast<CallInst>(I);
 
-  // FastISel does not support calls through funcref
-  if (Call->getCalledOperand()->getType()->getPointerAddressSpace() !=
-      WebAssembly::WasmAddressSpace::WASM_ADDRESS_SPACE_DEFAULT)
+  if (WebAssembly::isWebAssemblyFuncrefType(
+          Call->getCalledOperand()->getType()))
     return false;
+
+  // FastISel does not support funcref indirect calls via funcref_to_ptr;
+  // these require special table-based lowering done in DAG ISel.
+  if (auto *CalledCI = dyn_cast<CallInst>(Call->getCalledOperand())) {
+    if (Function *CalledF = CalledCI->getCalledFunction()) {
+      if (CalledF->getIntrinsicID() == Intrinsic::wasm_funcref_to_ptr)
+        return false;
+    }
+  }
 
   // TODO: Support tail calls in FastISel
   if (Call->isMustTailCall() || Call->isInlineAsm() ||
