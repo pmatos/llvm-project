@@ -2266,15 +2266,13 @@ SDValue WebAssemblyTargetLowering::LowerIntrinsic(SDValue Op,
         0);
   }
 
-  case Intrinsic::wasm_funcref_to_ptr: {
+  case Intrinsic::wasm_funcref_to_ptr:
     // This intrinsic converts funcref to pointer for use as a call callee.
     // LowerCall handles funcref calls by looking through this intrinsic and
     // using the funcref operand directly for proper register class assignment.
     // The intrinsic result (ptr type) is not actually used for funcref calls,
     // so we return UNDEF here. The funcref value is extracted in LowerCall.
-    SDLoc DL(Op);
     return DAG.getUNDEF(Op.getValueType());
-  }
   }
 }
 

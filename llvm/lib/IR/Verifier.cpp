@@ -3859,16 +3859,16 @@ void Verifier::visitPHINode(PHINode &PN) {
   visitInstruction(PN);
 }
 
-static bool isCallableType(Type *Ty) {
+static bool isCallableType(Type *Ty, const Triple &TT) {
   if (Ty->isPointerTy())
     return true;
   if (auto *TET = dyn_cast<TargetExtType>(Ty))
-    return TET->hasProperty(TargetExtType::CanBeCallee);
+    return TET->hasProperty(TargetExtType::CanBeCallee) && TT.isWasm();
   return false;
 }
 
 void Verifier::visitCallBase(CallBase &Call) {
-  Check(isCallableType(Call.getCalledOperand()->getType()),
+  Check(isCallableType(Call.getCalledOperand()->getType(), TT),
         "Called function must be a pointer or callable target type!", Call);
   FunctionType *FTy = Call.getFunctionType();
 

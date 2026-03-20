@@ -2828,7 +2828,8 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
     llvm::Type *DstTy = ConvertType(DestTy);
 
     // Handle conversion to WebAssembly funcref TargetExtType.
-    if (auto *TET = dyn_cast<llvm::TargetExtType>(DstTy)) {
+    if (auto *TET = dyn_cast<llvm::TargetExtType>(DstTy);
+        TET && TET->getName() == "wasm.funcref") {
       Expr::EvalResult Result;
       if (E->EvaluateAsRValue(Result, CGF.getContext()) &&
           Result.Val.isNullPointer()) {
@@ -2844,7 +2845,7 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
       // We emit a store/load type pun through memory, which the backend's
       // WebAssemblyRefTypeMem2Local pass will convert to local.set/get.
       llvm::Value *Src = Visit(E);
-      Address Tmp = CGF.CreateTempAlloca(TET, CharUnits::fromQuantity(4),
+      Address Tmp = CGF.CreateTempAlloca(TET, CGF.getPointerAlign(),
                                          "funcref.convert");
       Builder.CreateStore(Src, Tmp.withElementType(Src->getType()));
       return Builder.CreateLoad(Tmp);

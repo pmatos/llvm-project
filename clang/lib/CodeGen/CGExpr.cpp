@@ -6560,7 +6560,8 @@ CGCallee CodeGenFunction::EmitCallee(const Expr *E) {
         // If the loaded value is a WebAssembly funcref (TargetExtType),
         // convert it to a callable pointer via funcref.to.ptr.
         llvm::Value *CalleePtr = Result.first;
-        if (isa<llvm::TargetExtType>(CalleePtr->getType())) {
+        if (auto *TET = dyn_cast<llvm::TargetExtType>(CalleePtr->getType());
+            TET && TET->getName() == "wasm.funcref") {
           llvm::Function *FuncrefToPtr =
               CGM.getIntrinsic(llvm::Intrinsic::wasm_funcref_to_ptr);
           CalleePtr = Builder.CreateCall(FuncrefToPtr, {CalleePtr});
@@ -6604,7 +6605,8 @@ CGCallee CodeGenFunction::EmitCallee(const Expr *E) {
 
   // If the callee is a WebAssembly funcref (TargetExtType), convert it to a
   // callable pointer via the funcref.to.ptr intrinsic.
-  if (isa<llvm::TargetExtType>(calleePtr->getType())) {
+  if (auto *TET = dyn_cast<llvm::TargetExtType>(calleePtr->getType());
+      TET && TET->getName() == "wasm.funcref") {
     llvm::Function *FuncrefToPtr =
         CGM.getIntrinsic(llvm::Intrinsic::wasm_funcref_to_ptr);
     calleePtr = Builder.CreateCall(FuncrefToPtr, {calleePtr});
