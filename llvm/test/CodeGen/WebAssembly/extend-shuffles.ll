@@ -2,7 +2,7 @@
 
 ; RUN: llc < %s -mtriple=wasm32 -verify-machineinstrs -disable-wasm-fallthrough-return-opt -wasm-disable-explicit-locals -wasm-keep-registers -mattr=+simd128 | FileCheck %s --check-prefix=SIMD128
 
-target datalayout = "e-m:e-p:32:32-p10:8:8-p20:8:8-i64:64-i128:128-n32:64-S128-ni:1:10:20"
+target datalayout = "e-m:e-p:32:32-i64:64-i128:128-n32:64-S128-ni:1"
 target triple = "wasm32"
 
 define <4 x i32> @sext_high_v4i8(<8 x i8> %in) {

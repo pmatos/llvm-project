@@ -1,6 +1,6 @@
 ; RUN: opt -mtriple=wasm32 -mattr=+simd128 -passes=loop-vectorize %s | llc -mtriple=wasm32 -mattr=+simd128 -asm-verbose=false -disable-wasm-fallthrough-return-opt | FileCheck %s
 
-target datalayout = "e-m:e-p:32:32-p10:8:8-p20:8:8-i64:64-n32:64-S128-ni:1:10:20"
+target datalayout = "e-m:e-p:32:32-i64:64-n32:64-S128-ni:1"
 
 %struct.TwoInts = type { i32, i32 }
 %struct.ThreeInts = type { i32, i32, i32 }

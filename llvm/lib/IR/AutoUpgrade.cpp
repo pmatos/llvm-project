@@ -6693,6 +6693,25 @@ std::string llvm::UpgradeDataLayoutString(StringRef DL, StringRef TT) {
     }
   }
 
+  if (T.isWasm()) {
+    // Remove stale address space pointer specs for externref (10) and
+    // funcref (20). Reference types now use TargetExtType instead.
+    auto RemoveAddrSpace = [&Res](StringRef Spec) {
+      size_t Pos = Res.find(Spec);
+      if (Pos != std::string::npos)
+        Res.erase(Pos, Spec.size());
+    };
+    RemoveAddrSpace("-p10:8:8");
+    RemoveAddrSpace("-p20:8:8");
+
+    // Update ni:1:10:20 -> ni:1
+    constexpr StringRef OldNI = "ni:1:10:20";
+    constexpr StringRef NewNI = "ni:1";
+    size_t Pos = Res.find(OldNI);
+    if (Pos != std::string::npos)
+      Res.replace(Pos, OldNI.size(), NewNI);
+  }
+
   if (T.isPPC() && T.isOSAIX() && !DL.contains("f64:32:64") && !DL.empty()) {
     size_t Pos = Res.find("-S128");
     if (Pos == StringRef::npos)
